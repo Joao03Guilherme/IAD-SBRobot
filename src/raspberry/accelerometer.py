@@ -21,9 +21,6 @@ GYRO_ZOUT_L = 0x48
 
 i2c = I2C(1, sda=Pin(26), scl=Pin(27))  # Initialize I2C with SDA and SCL pins
 
-power_pin = Pin(21, Pin.OUT)
-power_pin.value(1)  # Set power pin high to turn on the MPU6050
-
 # Function to initialize the MPU-6050
 def mpu_init():
     # Wake up the MPU6050 (it is in sleep mode by default after power-up)
