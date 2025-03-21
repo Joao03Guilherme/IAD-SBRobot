@@ -7,11 +7,22 @@ import math
 from collections import deque
 
 sys.path.append('..')
-from raspberry.motor import motorA, motorB
+from raspberry.motor_controller import MotorController
 from raspberry.accelerometer import mpu_init, read_accel, read_gyro
 
 ALPHA = 0.98  # Complementary filter weight (gyro)
 DT = 0.01     # Timestep (s)
+
+# Motor configuration for all test functions
+MOTOR_CONFIG = {
+    "IN1": 2,
+    "IN2": 3,
+    "IN3": 4,
+    "IN4": 5,
+    "ENA": 6,
+    "ENB": 7,
+    "PWM_FREQ": 1000
+}
 
 class DataRecorder:
     """Stores and saves angle & motor power data."""
@@ -90,6 +101,10 @@ class AngleSensor:
 def test_motor_power_for_angle(angle_sensor, target_angle, current_power=0, step=2):
     """Attempt to find motor power required for a specific target angle."""
     print(f"Target angle: {target_angle:.2f}°")
+    
+    # Initialize motor controller
+    motors = MotorController(MOTOR_CONFIG)
+    
     Kp, Ki, Kd = 1.2, 0.1, 0.05
     angle_error_sum = 0
     last_error = 0
@@ -112,6 +127,7 @@ def test_motor_power_for_angle(angle_sensor, target_angle, current_power=0, step
                 print(f"Stable at {current_power}% (Angle: {current_angle:.2f}°)")
                 recorder.save(f"angle_test_{target_angle:.1f}_deg.npz")
                 visualize_test(recorder, target_angle)
+                motors.stop()
                 return current_angle, current_power
         else:
             stable_count = 0
@@ -122,13 +138,12 @@ def test_motor_power_for_angle(angle_sensor, target_angle, current_power=0, step
         new_power = max(-100, min(100, new_power))
         if new_power != current_power:
             current_power = new_power
-            motorA(current_power)
-            motorB(current_power)
+            motors.motor_a(current_power)
+            motors.motor_b(current_power)
             time.sleep(0.1)
         last_error = angle_error
     print(f"No stable power found for {target_angle:.2f}°")
-    motorA(0)
-    motorB(0)
+    motors.stop()
     recorder.save(f"angle_test_{target_angle:.1f}_deg_unstable.npz")
     return None, None
 
@@ -157,14 +172,21 @@ def run_experiment():
     time.sleep(1)
     tests = [1, 3, 5, 8, 10, 12, 15]
     results = {'angles': [], 'powers': []}
+    
+    # Initialize motor controller once for all tests
+    motors = MotorController(MOTOR_CONFIG)
+    
     for angle in tests:
         a, p = test_motor_power_for_angle(angle_sensor, angle)
         if a is not None and p is not None:
             results['angles'].append(a)
             results['powers'].append(p)
-            motorA(0)
-            motorB(0)
+            motors.stop()
             time.sleep(1)
+    
+    # Make sure motors are stopped at the end
+    motors.stop()
+    
     if results['angles']:
         np.savez('angle_power_results.npz', angles=results['angles'], powers=results['powers'])
         analyze_results(results['angles'], results['powers'])
