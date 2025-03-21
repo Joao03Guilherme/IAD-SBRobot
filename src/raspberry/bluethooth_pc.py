@@ -3,7 +3,7 @@ from bleak import BleakClient
 from bleak import BleakScanner
 
 """
-THIS CODE SHOULD BE RAN IN THE RASPBERRY PI
+THIS CODE SHOULD BE RAN IN THE PC
 """
 
 # Device information
@@ -97,23 +97,8 @@ class BLEEmitter:
 
 # Available commands menu
 COMMANDS = {
-    "1": "LED_ON",
-    "2": "LED_OFF",
-    "3": "PING",
-    "4": "FORWARD",
-    "5": "BACKWARD",
-    "6": "LEFT",
-    "7": "RIGHT",
-    "8": "STOP",
-    "9": "BALANCE_ON",   # Turn on self-balancing
-    "0": "BALANCE_OFF",  # Turn off self-balancing
-}
-
-# Advanced command templates
-ADVANCED_COMMANDS = {
-    "p": "PID:{kp},{ki},{kd}",     # Set PID parameters
-    "a": "ANGLE:{angle}",           # Set target angle
-    "m": "MOTOR:{left},{right}"     # Set motor speeds directly
+    "1": "RUN",
+    "2": "STOP",
 }
 
 async def interactive_mode(controller):
@@ -124,12 +109,6 @@ async def interactive_mode(controller):
         for key, cmd in COMMANDS.items():
             print(f"{key}: {cmd}")
         
-        print("\nAdvanced Commands:")
-        print("p: Set PID parameters (example: p,40,40,0.05)")
-        print("a: Set target angle (example: a,-2.5)")
-        print("m: Set motor speeds (example: m,50,-50)")
-        print("\nq: Quit")
-        
         choice = input("\nEnter command: ")
         
         if choice.lower() == 'q':
@@ -137,38 +116,8 @@ async def interactive_mode(controller):
         
         if choice in COMMANDS:
             await controller.send_command(COMMANDS[choice])
-        elif choice.startswith(('p,', 'a,', 'm,')):
-            # Parse advanced commands
-            cmd_type, *params = choice.split(',')
-            
-            if cmd_type == 'p' and len(params) == 3:
-                try:
-                    kp, ki, kd = map(float, params)
-                    cmd = ADVANCED_COMMANDS['p'].format(kp=kp, ki=ki, kd=kd)
-                    await controller.send_command(cmd)
-                except:
-                    print("Invalid PID parameters! Use format: p,40,40,0.05")
-            
-            elif cmd_type == 'a' and len(params) == 1:
-                try:
-                    angle = float(params[0])
-                    cmd = ADVANCED_COMMANDS['a'].format(angle=angle)
-                    await controller.send_command(cmd)
-                except:
-                    print("Invalid angle! Use format: a,-2.5")
-            
-            elif cmd_type == 'm' and len(params) == 2:
-                try:
-                    left, right = map(int, params)
-                    cmd = ADVANCED_COMMANDS['m'].format(left=left, right=right)
-                    await controller.send_command(cmd)
-                except:
-                    print("Invalid motor speeds! Use format: m,50,-50")
-            else:
-                print("Invalid command format!")
         else:
-            # Allow custom commands
-            await controller.send_command(choice)
+            print("Invalid command. Please try again.")
         
         # Small delay to allow for BLE responses
         await asyncio.sleep(0.5)

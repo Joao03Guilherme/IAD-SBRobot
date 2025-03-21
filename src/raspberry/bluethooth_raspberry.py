@@ -1,10 +1,9 @@
 import bluetooth
 import json
 from machine import Pin
-import time
 
 """
-THIS CODE SHOULD BE RAN IN THE PC
+THIS CODE SHOULD BE RAN IN THE raspberry PI
 """
 
 # Status LED for visual feedback
@@ -163,44 +162,3 @@ class BLEReceiver:
             callback: Function that takes command string as parameter
         """
         self.command_callback = callback
-
-# Example usage when module is run directly
-if __name__ == "__main__":
-    def handle_command(cmd):
-        print(f"Processing command: {cmd}")
-        
-        # Basic test commands
-        if cmd == "LED_ON":
-            led.value(1)
-            return "LED turned on"
-        elif cmd == "LED_OFF":
-            led.value(0)
-            return "LED turned off"
-        elif cmd == "PING":
-            return "PONG"
-        else:
-            return f"Unknown command: {cmd}"
-    
-    # Create BLE controller
-    ble = BLEReceiver(name="PicoRobot")
-    ble.set_command_callback(handle_command)
-    
-    # Simple test loop
-    counter = 0
-    try:
-        while True:
-            # Update counter
-            counter += 1
-            
-            # Send telemetry every second if connected
-            if ble.connected and counter % 10 == 0:
-                ble.send_telemetry({
-                    "counter": counter,
-                    "uptime": time.ticks_ms() // 1000
-                })
-                
-            # Small delay to prevent CPU hogging
-            time.sleep(0.1)
-            
-    except KeyboardInterrupt:
-        print("Program stopped")
