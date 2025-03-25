@@ -7,7 +7,7 @@ THIS CODE SHOULD BE RAN IN THE PC
 """
 
 # Device information
-PICO_NAME = "PicoRobot"
+PICO_NAME = "PicoBot"
 PICO_ADDRESS = "33844EF1-F428-5A3B-DF48-83DFC12F9890"  # Your Pico's address
 
 # Service and characteristic UUIDs - match those in your bluethooth_receiver.py
@@ -125,7 +125,7 @@ async def interactive_mode(controller):
 async def main():
     """Main function"""
     # Create controller object
-    controller = BLEEmitter(PICO_ADDRESS)
+    controller = BLEEmitter(PICO_NAME)
     
     try:
         # Try to connect
