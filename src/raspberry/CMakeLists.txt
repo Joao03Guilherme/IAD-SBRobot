@@ -16,12 +16,14 @@ pico_sdk_init()
 set(PYTHON_FILES
     controllers/gyroscope_controller.py
     controllers/motor_controller.py
-    angle.py
-    drive.py
+    bluethooth/BLEEmiter.py 
+    bluethooth/BLEReceiver.py
+    bluethooth/BLEParameters.py
+    accelerometer.py
     directions_finder.py
-    bluethooth_raspberry.py
+    drive.py
+    full_bluethooth_pc.py
     full_prototype.py
-    main.py
 )
 
 # Create target for Python files

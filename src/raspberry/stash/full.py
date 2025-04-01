@@ -2,7 +2,7 @@ from machine import Pin, I2C
 import time
 
 from raspberry.controllers.motor_controller import MotorController
-from raspberry.controllers.balance_controller import BalanceController
+from raspberry.stash.balance_controller import BalanceController
 from raspberry.controllers.gyroscope_controller import MPU6050
 
 # ======== CONFIGURATION ========
