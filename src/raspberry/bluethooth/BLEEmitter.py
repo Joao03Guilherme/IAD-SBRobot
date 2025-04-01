@@ -3,7 +3,6 @@ from bleak import BleakScanner
 import BLEParameters as params
 
 
-
 class BLEEmitter:
     def __init__(self, device_address=None, device_name=params.PICO_NAME):
         self.device_address = device_address
@@ -37,7 +36,9 @@ class BLEEmitter:
                 print(f"Connected to {self.device_name}!")
 
                 # Subscribe to telemetry notifications
-                await self.client.start_notify(params.TELEMETRY_CHAR_UUID, self._on_telemetry)
+                await self.client.start_notify(
+                    params.TELEMETRY_CHAR_UUID, self._on_telemetry
+                )
                 print("Subscribed to telemetry notifications")
                 return True
             else:
