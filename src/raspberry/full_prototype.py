@@ -262,6 +262,32 @@ class SelfBalancingRobot:
         # Send telemetry
         self.ble.send_telemetry(telemetry)
 
+    def find_balance_point(self):
+        """Utility function to find the natural balance point of the robot.
+        This helps determine the optimal balance_target value."""
+
+        print("Finding balance point. Place the robot upright and keep it still...")
+
+        samples = []
+        duration = 5  # seconds
+        start_time = time.time()
+
+        # Collect angle data for several seconds
+        while time.time() - start_time < duration:
+            angle = self.driver.angle_data[-1] if self.driver.angle_data else 0
+            samples.append(angle)
+            time.sleep(0.05)
+            status_led.toggle()  # Blink during measurement
+
+        # Calculate average angle
+        if samples:
+            avg_angle = sum(samples) / len(samples)
+            print(f"Balance point found at approximately {avg_angle:.2f} degrees")
+            return avg_angle
+        else:
+            print("Error: No samples collected")
+            return None
+
     def main_loop(self):
         """Main control loop."""
         last_telemetry_time = 0
@@ -302,34 +328,7 @@ class SelfBalancingRobot:
             print("Robot stopped")
 
 
-def find_balance_point():
-    """Utility function to find the natural balance point of the robot.
-    This helps determine the optimal balance_target value."""
-
-    print("Finding balance point. Place the robot upright and keep it still...")
-
-    samples = []
-    duration = 5  # seconds
-    start_time = time.time()
-
-    # Collect angle data for several seconds
-    while time.time() - start_time < duration:
-        angle, _, _ = angle_sensor.update()
-        samples.append(angle)
-        time.sleep(0.05)
-        status_led.toggle()  # Blink during measurement
-
-    # Calculate average angle
-    if samples:
-        avg_angle = sum(samples) / len(samples)
-        print(f"Balance point found at approximately {avg_angle:.2f} degrees")
-        return avg_angle
-    else:
-        print("Error: No samples collected")
-        return None
-
-
-def calibration_mode():
+def calibration_mode(robot):
     """Interactive mode to calibrate the robot."""
     print("==== Calibration Mode ====")
     print("1. Find balance point")
@@ -339,13 +338,13 @@ def calibration_mode():
     choice = input("Enter choice (1-3): ")
 
     if choice == "1":
-        balance_point = find_balance_point()
+        balance_point = robot.find_balance_point()
         if balance_point is not None:
             print(f"Set balance_target to {balance_point:.2f} in your configuration")
 
     elif choice == "2":
         print("Testing motors...")
-        motors = MotorController(MOTOR_CONFIG)
+        motors = robot.motor_controller
 
         try:
             # Test left motor

@@ -39,6 +39,10 @@ async def interactive_mode(controller):
         if choice.lower() == "q":
             break
 
+        if choice.lower not in COMMANDS:
+            print("Invalid command. Please try again.")
+            continue
+
         # Send the command as-is (the robot will parse it)
         await controller.send_command(choice)
 
