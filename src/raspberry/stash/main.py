@@ -1,7 +1,7 @@
 import time
 
-from motor_controller import MotorController
-from bluethooth_raspberry import BLEReceiver
+from raspberry.controllers.motor_controller import MotorController
+from raspberry.stash.bluethooth_raspberry import BLEReceiver
 
 if __name__ == "__main__":
     # Motor pin configuration
@@ -12,7 +12,7 @@ if __name__ == "__main__":
         "IN4": 5,
         "ENA": 6,
         "ENB": 7,
-        "PWM_FREQ": 1000
+        "PWM_FREQ": 1000,
     }
     motor_controller = MotorController(MOTOR_CONFIG)
     motorA = motor_controller.motor_a
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     def handle_command(cmd):
         print(f"Processing command: {cmd}")
-        
+
         if cmd == "RUN":
             print("Running motors...")
             motorA(50)

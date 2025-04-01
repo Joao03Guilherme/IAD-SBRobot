@@ -14,8 +14,8 @@ pico_sdk_init()
 # Add your Python files to be copied to the Pico
 # Order matters - list dependencies first, then files that depend on them
 set(PYTHON_FILES
-    gyroscope_controller.py
-    motor_controller.py
+    controllers/gyroscope_controller.py
+    controllers/motor_controller.py
     angle.py
     drive.py
     directions_finder.py
