@@ -30,7 +30,7 @@ class MPU6050:
     GYRO_SCALE_FACTOR = 131.0
     
     # Time constant for complementary filter (in seconds)
-    FILTER_TIME_CONSTANT = 10
+    FILTER_TIME_CONSTANT = 3
     
     def __init__(self, sda_pin=26, scl_pin=27):
         # Initialize I2C with SDA and SCL pins
@@ -200,9 +200,12 @@ class WheelEncoder:
 if __name__ == "__main__":
     # Initialize the MPU6050 sensor
     mpu = MPU6050()
-    
+
+    pinA = 19
+    pinB = 18
     # Initialize the wheel encoder
-    encoder = WheelEncoder()
+    encoderA = WheelEncoder(encoder_pin=pinA)
+    encoderB = WheelEncoder(encoder_pin=pinB)  
     
     # Cycle to continuously read sensor data
     while True:
@@ -212,19 +215,34 @@ if __name__ == "__main__":
         accel_angle_x, accel_angle_y = mpu.calc_accel_angles()
         
         # Read wheel encoder data in a series of measurements
-        wheel_rpm_list = []
+        wheel_rpm_listA = []
+        wheel_rpm_listB = []
         time_list = []
         for i in range(50):
-            wheel_rpm = encoder.get_rpm()
-            wheel_rpm_list.append(wheel_rpm)
+            wheel_rpmA = encoderA.get_rpm()
+            wheel_rpmB = encoderB.get_rpm()
+            wheel_rpm_listA.append(wheel_rpmA)
+            wheel_rpm_listB.append(wheel_rpmB)
             time_list.append(time.ticks_ms())
             time.sleep_us(100)
+
+        print("Wheel RPM A:", wheel_rpm_listA)
+        print("Wheel RPM B:", wheel_rpm_listB)
         
         # Calculate speed and acceleration from the collected data
-        wheel_rpm = wheel_rpm_list[-1] if wheel_rpm_list else 0
-        wheel_speed = encoder.get_speed(wheel_rpm, 1)
-        wheel_acceleration = encoder.get_absolute_acceleration(wheel_rpm_list, time_list, 1)
-        
+        wheel_rpmA = wheel_rpm_listA[-1] if wheel_rpm_listA else 0
+        wheel_rpmB = wheel_rpm_listB[-1] if wheel_rpm_listB else 0
+        wheel_speedA = encoderA.get_speed(wheel_rpmA, 1)
+        wheel_speedB = encoderB.get_speed(wheel_rpmB, 1)
+        wheel_accelerationA = encoderA.get_absolute_acceleration(wheel_rpm_listA, time_list, 1)
+        wheel_accelerationB = encoderB.get_absolute_acceleration(wheel_rpm_listB, time_list, 1)
+        # Print the results
+        print(f"Wheel A - RPM: {wheel_rpmA:.2f}, Speed: {wheel_speedA:.2f} m/s, Acceleration: {wheel_accelerationA:.2f} m/s²")
+        print(f"Wheel B - RPM: {wheel_rpmB:.2f}, Speed: {wheel_speedB:.2f} m/s, Acceleration: {wheel_accelerationB:.2f} m/s²")
+
         print(f"Angles gyro (x,y,z): ({angle_x:.2f}, {angle_y:.2f}, {angle_z:.2f})")
         print(f"Angles accel (x,y): ({accel_angle_x:.2f}, {accel_angle_y:.2f})")
-        print(f"Wheel RPM: {wheel_rpm:.2f}, Speed: {wheel_speed:.2f} m/s, Acceleration: {wheel_acceleration:.2f} m/s²")
+
+        # Sleep for a while before the next reading
+        time.sleep(1)
+        
