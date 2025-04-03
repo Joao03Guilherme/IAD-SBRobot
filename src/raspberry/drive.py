@@ -39,8 +39,8 @@ class Driving:
         self.balance_kp = 5.0
         self.balance_ki = 0.1
         self.balance_kd = 0.5
-        self.sample_time = 0.01
-        self.max_safe_tilt = 5.0
+        self.sample_time = 0.0001
+        self.max_safe_tilt = 100 # TODO: CHANGE TO 5
 
         # Initialize PID state
         self.error_sum = 0
@@ -104,7 +104,7 @@ class Driving:
         accel_angle_x, _ = self.mpu.calc_accel_angles()
 
         # Apply complementary filter to combine gyro and accelerometer data
-        alpha = 0.98
+        alpha = 0.97
         current_angle = alpha * gyro_angle_x + (1 - alpha) * accel_angle_x
 
         self.angle_data.append(current_angle)

@@ -53,3 +53,6 @@ Script para computador que se conecta ao robô via Bluetooth, permitindo o envio
   - IN4 → GP5
   - ENA → GP6
   - ENB → GP7
+
+- Econders:
+  - 
