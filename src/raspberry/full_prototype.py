@@ -6,9 +6,9 @@ Self-balancing robot main control program
 import time
 from machine import Pin, I2C
 
-# Import core modules - now including angle.py and drive.py
-from raspberry.controllers.motor_controller import MotorController
-from raspberry.bluethooth.BLEReceiver import BLEReceiver
+import asyncio
+from controllers.motor_controller import MotorController
+from bluethooth.BLEReceiver import BLEReceiver
 from drive import Driving
 
 # Configuration
@@ -52,9 +52,12 @@ class SelfBalancingRobot:
         # Use the Driving class from drive.py
         self.driver = Driving(self.motor_controller)
 
-        # Fix: Initialize BLE without the name parameter
+        # Wrapper for async callback
+        def command_callback(cmd):
+            asyncio.create_task(self.handle_command(cmd))
+        
         self.ble = BLEReceiver()
-        self.ble.set_command_callback(self.handle_command)
+        self.ble.set_command_callback(command_callback)
 
         # Robot state
         self.running = False
@@ -64,15 +67,19 @@ class SelfBalancingRobot:
         print("Robot initialized successfully!")
         self.send_help_message()
 
-    def start(self):
-        """Start the balancing loop."""
-        print("Starting balance control...")
-        self.running = True
-        self.main_loop()
+    async def ble_listener(self):
+        """Listen for BLE commands and handle them."""
+        while True:
+            if self.ble.connected:
+                await asyncio.sleep(0.1)  # Adjust the sleep time as needed
 
-    def stop(self):
+    async def start(self):
+        """Start the balancing loop."""
+        self.running = True
+        await asyncio.gather(self.main_loop(), self.ble_listener())
+
+    async def stop(self):
         """Stop the robot."""
-        print("Stopping robot...")
         self.running = False
         self.driver.stop()
 
@@ -118,13 +125,13 @@ class SelfBalancingRobot:
             # Use send_telemetry instead of send_message
             self.ble.send_telemetry(status_text)
 
-    def handle_command(self, cmd):
+    async def handle_command(self, cmd):
         """Process BLE commands."""
         # Make sure cmd is a string
         if isinstance(cmd, bytes):
             cmd = cmd.decode("utf-8")
 
-        print(f"Received command [CALLBACK]: {cmd}")
+        print(f"Command received [CALLBACK]: {cmd}")
 
         # Strip whitespace and handle empty commands
         cmd = cmd.strip()
@@ -142,12 +149,12 @@ class SelfBalancingRobot:
 
             if action == "START":
                 print("Starting robot...")
-                self.start()
+                await self.start()
                 return
 
             elif action == "STOP":
                 print("Stopping robot...")
-                self.stop()
+                await self.stop()
                 return
 
             elif action == "DRIVE":
@@ -288,7 +295,7 @@ class SelfBalancingRobot:
             print("Error: No samples collected")
             return None
 
-    def main_loop(self):
+    async def main_loop(self):
         """Main control loop."""
         last_telemetry_time = 0
         print(
@@ -299,7 +306,7 @@ class SelfBalancingRobot:
             while self.running:
                 # Update driving with current speed and turn
                 print(f"Calling driver.forward({self.speed}, {self.turn})")
-                angle, left, right = self.driver.forward(self.speed, self.turn)
+                angle, left, right, speed, acceleration = self.driver.forward(self.speed, self.turn)
                 print(
                     f"forward() result: angle={angle:.2f}, left={left}, right={right}"
                 )
@@ -318,7 +325,7 @@ class SelfBalancingRobot:
                     last_telemetry_time = current_time
                     status_led.toggle()  # Blink to show activity
 
-                time.sleep(self.driver.sample_time)
+                await asyncio.sleep(self.driver.sample_time)
 
         except Exception as e:
             print(f"Error in main loop: {e}")
@@ -382,8 +389,7 @@ def calibration_mode(robot):
     else:
         print("Invalid choice")
 
-
-def main():
+async def main():
     """Program entry point."""
     robot = SelfBalancingRobot()
 
@@ -393,16 +399,31 @@ def main():
     print("3 <speed> [turn]: Set drive parameters (speed, optional turn)")
     print("4 <angle> <direction>: Turn by specified angle (1=right, -1=left)")
     print("7: Show help")
-
+    
+    # Start the BLE listener immediately
+    ble_task = asyncio.create_task(robot.ble_listener())
+    
+    # Run telemetry task in the background
+    last_time = time.time()   
     try:
         while True:
-            time.sleep(1)
-            robot.send_telemetry()  # Keep sending status
+            if time.time() - last_time >= 1:
+                robot.send_telemetry()
+                last_time = time.time()
+            
+            # Process any pending BLE commands
+            await asyncio.sleep(0.1)  # Prevent CPU overload
+
     except KeyboardInterrupt:
         print("\nProgram terminated")
     finally:
         robot.stop()
-
+        # Cancel the BLE listener task
+        ble_task.cancel()
+        try:
+            await ble_task
+        except asyncio.CancelledError:
+            pass
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -39,11 +39,12 @@ async def interactive_mode(controller):
         if choice.lower() == "q":
             break
 
-        if choice.lower not in COMMANDS:
+        if choice.lower() not in COMMANDS:
             print("Invalid command. Please try again.")
             continue
 
         # Send the command as-is (the robot will parse it)
+        print(f"Sending command: {choice}")
         await controller.send_command(choice)
 
         # Small delay to allow for BLE responses
@@ -64,7 +65,6 @@ async def main():
     finally:
         # Always disconnect properly
         await controller.disconnect()
-
 
 # Run the main function
 if __name__ == "__main__":
