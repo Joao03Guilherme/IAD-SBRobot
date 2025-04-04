@@ -36,9 +36,9 @@ class Driving:
 
         # Balance parameters
         self.balance_target = 0
-        self.balance_kp = 5.0
-        self.balance_ki = 0.1
-        self.balance_kd = 0.5
+        self.balance_kp = 50
+        self.balance_ki = 30
+        self.balance_kd = 90
         self.sample_time = 0.0001
         self.max_safe_tilt = 100 # TODO: CHANGE TO 5
 
@@ -153,11 +153,8 @@ class Driving:
         Returns:
             (current_angle, left_power, right_power, current_speed, current_acceleration)
         """
-        current_speed = self.wheel_encoder.get_speed(
-            self.wheel_encoder.get_rpm(), self.direction
-        )
+        current_speed = self.wheel_encoder.get_speed(self.direction)
 
-        
         # Use the balance method with smoothed target speed
         current_angle, driving_power = self.balance(
             current_speed=current_speed, 
@@ -221,14 +218,12 @@ class Driving:
         self.time_data.append(current_time)
         
         # Calculate speed and acceleration
-        current_speed = self.wheel_encoder.get_speed(current_rpm, self.direction)
+        current_speed = self.wheel_encoder.get_speed(self.direction)
         self.speed_data.append(current_speed)
         
         # Get acceleration if we have enough data points
         if len(self.rpm_data) >= 3 and len(self.time_data) >= 3:
-            current_acceleration = self.wheel_encoder.get_absolute_acceleration(
-                list(self.rpm_data), list(self.time_data), self.direction
-            )
+            current_acceleration = self.wheel_encoder.get_absolute_acceleration(self.direction)
         else:
             current_acceleration = 0
             

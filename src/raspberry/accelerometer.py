@@ -22,15 +22,15 @@ class MPU6050:
     GYRO_ZOUT_L = 0x48
     
     # Gyroscope bias
-    BIAS_X = -1440.115
-    BIAS_Y = 226.0664
-    BIAS_Z = -1314.369
+    BIAS_X = -1064.831
+    BIAS_Y = 224.058
+    BIAS_Z = -1357.831
     
     # Default is ±250 deg/s range, which gives 131 LSB/(deg/s)
     GYRO_SCALE_FACTOR = 131.0
     
     # Time constant for complementary filter (in seconds)
-    FILTER_TIME_CONSTANT = 3
+    FILTER_TIME_CONSTANT = 200
     
     def __init__(self, sda_pin=26, scl_pin=27):
         # Initialize I2C with SDA and SCL pins
@@ -125,9 +125,10 @@ class MPU6050:
         
         return self.angle_x, self.angle_y, self.angle_z
 
+import asyncio
 
 class WheelEncoder:
-    def __init__(self, encoder_pin=28, pulses_per_rev=20, wheel_diameter=0.067):
+    def __init__(self, encoder_pin=19, pulses_per_rev=20, wheel_diameter=0.067):
         self.ENCODER_PIN = encoder_pin
         self.PULSES_PER_REV = pulses_per_rev
         self.WHEEL_DIAMETER = wheel_diameter
@@ -135,7 +136,14 @@ class WheelEncoder:
         self.pulse_count = 0
         self.encoder = None
         
-        # Initialization now explicitly named
+        # Buffers for storing historical data (last 50 points)
+        self.rpm_buffer = [0] * 5
+        self.time_buffer = [0] * 5
+        self.is_running = False
+        self.last_measurement_time = 0
+        self.measurement_interval_ms = 70  # 100ms (50Hz)
+        
+        # Initialize the encoder
         self.initialize_encoder()
     
     def initialize_encoder(self):
@@ -147,16 +155,53 @@ class WheelEncoder:
     def _irq_handler(self, pin):
         self.pulse_count += 1
     
-    def get_rpm(self, interval_ms=1000):
-        # Copy the pulse count and then reset it
-        count = self.pulse_count
-        self.pulse_count = 0
-        # Calculate RPM: (pulses / pulses per rev) gives revolutions per interval,
-        # then multiply by (60000 / interval_ms) to convert to revolutions per minute.
-        rpm = (count / self.PULSES_PER_REV) * (60000 / interval_ms)
-        return rpm
+    async def run_background_measurement(self):
+        """Continuously measures RPM and maintains the data buffer."""
+        self.is_running = True
+        while self.is_running:
+            current_time = time.ticks_ms()
+            
+            # Only take measurement if enough time has passed
+            if time.ticks_diff(current_time, self.last_measurement_time) >= self.measurement_interval_ms:
+                # Get current RPM
+                count = self.pulse_count
+                self.pulse_count = 0
+                
+                # Calculate instant RPM
+                elapsed_ms = time.ticks_diff(current_time, self.last_measurement_time)
+                rpm = (count / self.PULSES_PER_REV) * (60000 / elapsed_ms) if elapsed_ms > 0 else 0
+                
+                # Update buffers (shift values and add new one at the end)
+                self.rpm_buffer.pop(0)
+                self.rpm_buffer.append(rpm)
+                self.time_buffer.pop(0)
+                self.time_buffer.append(current_time)
+                
+                # Update last measurement time
+                self.last_measurement_time = current_time
+            
+            # Small sleep to prevent CPU overload
+            await asyncio.sleep(0.01)
     
-    def get_speed(self, rpm_mean, direction):
+    def start(self):
+        """Start the background measurement task."""
+        asyncio.create_task(self.run_background_measurement())
+    
+    def stop(self):
+        """Stop the background measurement task."""
+        self.is_running = False
+    
+    def get_rpm(self):
+        """Returns the latest RPM value from the buffer."""
+        return self.rpm_buffer[-1] if self.rpm_buffer else 0
+    
+    def get_rpm_buffer(self):
+        """Returns the entire RPM buffer."""
+        return self.rpm_buffer
+    
+    def get_speed(self, direction=1):
+        """Calculate speed based on the latest RPM."""
+        rpm_mean = self.get_rpm()
         wheel_circumference = math.pi * self.WHEEL_DIAMETER
         # Speed in m/s = (RPM * circumference) / 60
         speed_m_s = (rpm_mean * wheel_circumference) / 60
@@ -169,8 +214,20 @@ class WheelEncoder:
             speed_m_s = 0  # No movement
         return speed_m_s
     
-    def get_absolute_acceleration(self, rpms, times, direction):
+    def get_absolute_acceleration(self, direction=1):
+        """Calculate acceleration based on the buffered RPM data."""
+        rpms = self.rpm_buffer
+        times = [t/1000 for t in self.time_buffer]  # Convert to seconds
         wheel_circumference = math.pi * self.WHEEL_DIAMETER
+        
+        # Filter out zero times (avoid issues in the calculation)
+        valid_data = [(t, r) for t, r in zip(times, rpms) if t > 0]
+        
+        if len(valid_data) < 2:
+            return 0
+            
+        times = [t for t, _ in valid_data]
+        rpms = [r for _, r in valid_data]
         
         # Calculate the slope (acceleration) using linear regression
         n = len(rpms)
@@ -185,7 +242,7 @@ class WheelEncoder:
             
         slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x_squared - sum_x**2)
         # Calculate the acceleration in m/s²
-        acceleration = (slope * wheel_circumference * 1000) / 60
+        acceleration = (slope * wheel_circumference) / 60
         # Adjust acceleration based on direction
         if direction == 1:  # Forward
             acceleration = abs(acceleration)
@@ -194,55 +251,36 @@ class WheelEncoder:
         else:
             acceleration = 0  # No movement
         return acceleration
-
-
-# Example usage
-if __name__ == "__main__":
-    # Initialize the MPU6050 sensor
-    mpu = MPU6050()
-
-    pinA = 19
-    pinB = 18
-    # Initialize the wheel encoder
-    encoderA = WheelEncoder(encoder_pin=pinA)
-    encoderB = WheelEncoder(encoder_pin=pinB)  
     
-    # Cycle to continuously read sensor data
-    while True:
-        # Read gyro angles from MPU6050
-        angle_x, angle_y, angle_z = mpu.angle_from_gyro()
-        # Read accelerometer angles
-        accel_angle_x, accel_angle_y = mpu.calc_accel_angles()
+# Example usage with async
+async def main():
+    # Initialize the MPU6050
+    mpu = MPU6050()
+    dt = 0.0001
+
+    anglesx = []
+    anglesy = []
+    anglesz = []
+
+    for i in range(1000):
+        angle_x, angle_y, angle_z = mpu.read_gyro()
+        anglesx.append(angle_x)
+        anglesy.append(angle_y)
+        anglesz.append(angle_z)
         
-        # Read wheel encoder data in a series of measurements
-        wheel_rpm_listA = []
-        wheel_rpm_listB = []
-        time_list = []
-        for i in range(50):
-            wheel_rpmA = encoderA.get_rpm()
-            wheel_rpmB = encoderB.get_rpm()
-            wheel_rpm_listA.append(wheel_rpmA)
-            wheel_rpm_listB.append(wheel_rpmB)
-            time_list.append(time.ticks_ms())
-            time.sleep_us(100)
+        # Sleep for a short duration to simulate real-time data acquisition
+        await asyncio.sleep(dt)
+    
+    # Print the average angles
+    avg_angle_x = sum(anglesx) / len(anglesx)
+    avg_angle_y = sum(anglesy) / len(anglesy)
+    avg_angle_z = sum(anglesz) / len(anglesz)
 
-        print("Wheel RPM A:", wheel_rpm_listA)
-        print("Wheel RPM B:", wheel_rpm_listB)
-        
-        # Calculate speed and acceleration from the collected data
-        wheel_rpmA = wheel_rpm_listA[-1] if wheel_rpm_listA else 0
-        wheel_rpmB = wheel_rpm_listB[-1] if wheel_rpm_listB else 0
-        wheel_speedA = encoderA.get_speed(wheel_rpmA, 1)
-        wheel_speedB = encoderB.get_speed(wheel_rpmB, 1)
-        wheel_accelerationA = encoderA.get_absolute_acceleration(wheel_rpm_listA, time_list, 1)
-        wheel_accelerationB = encoderB.get_absolute_acceleration(wheel_rpm_listB, time_list, 1)
-        # Print the results
-        print(f"Wheel A - RPM: {wheel_rpmA:.2f}, Speed: {wheel_speedA:.2f} m/s, Acceleration: {wheel_accelerationA:.2f} m/s²")
-        print(f"Wheel B - RPM: {wheel_rpmB:.2f}, Speed: {wheel_speedB:.2f} m/s, Acceleration: {wheel_accelerationB:.2f} m/s²")
+    print(f"Average Angle X: {avg_angle_x} degrees")
+    print(f"Average Angle Y: {avg_angle_y} degrees")
+    print(f"Average Angle Z: {avg_angle_z} degrees")
 
-        print(f"Angles gyro (x,y,z): ({angle_x:.2f}, {angle_y:.2f}, {angle_z:.2f})")
-        print(f"Angles accel (x,y): ({accel_angle_x:.2f}, {accel_angle_y:.2f})")
-
-        # Sleep for a while before the next reading
-        time.sleep(1)
+# Run the async program
+if __name__ == "__main__":
+    asyncio.run(main())
         

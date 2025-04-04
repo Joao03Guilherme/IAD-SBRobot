@@ -37,6 +37,7 @@ COMMANDS = {
     "6": {"action": "CALIBRATE", "description": "Start calibration procedure"},
     "7": {"action": "HELP", "description": "Show this help"},
     "8": {"action": "STATUS", "description": "Show current robot status"},
+    "9": {"action": "RESET", "description": "Reset the robot"},
 }
 
 
@@ -298,6 +299,10 @@ class SelfBalancingRobot:
     async def main_loop(self):
         """Main control loop."""
         last_telemetry_time = 0
+        self.speed = 0
+        self.turn = 0
+        self.running = True
+        
         print(
             f"Entering main loop with speed={self.speed}, turn={self.turn}, running={self.running}"
         )
@@ -306,7 +311,7 @@ class SelfBalancingRobot:
             while self.running:
                 # Update driving with current speed and turn
                 print(f"Calling driver.forward({self.speed}, {self.turn})")
-                angle, left, right, speed, acceleration = self.driver.forward(self.speed, self.turn)
+                angle, left, right, speed, acceleration = self.driver.forward(target_speed=self.speed, turn_bias=self.turn)
                 print(
                     f"forward() result: angle={angle:.2f}, left={left}, right={right}"
                 )

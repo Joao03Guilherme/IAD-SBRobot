@@ -15,6 +15,7 @@ COMMANDS = {
     "6": {"action": "CALIBRATE", "description": "Start calibration procedure"},
     "7": {"action": "HELP", "description": "Show this help"},
     "8": {"action": "STATUS", "description": "Show current robot status"},
+    "9": {"action": "RESET", "description": "Reset the robot"},
 }
 
 
