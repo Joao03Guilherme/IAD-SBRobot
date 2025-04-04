@@ -26,7 +26,7 @@ except ImportError:
 from drive import Driving
 from controllers.motor_controller import MotorController
 # Import the simulation
-from robot_simulation import RobotSimulation
+from raspberry.training.robot_simulation import RobotSimulation
 
 
 class TrainingEnvironment:
