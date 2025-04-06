@@ -9,36 +9,15 @@ from machine import Pin, I2C
 import asyncio
 from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
-from drive import Driving
+from controllers.balance_controller import Driving
+import parameters as params
 
-# Configuration
-MOTOR_CONFIG = {
-    "IN1": 2,
-    "IN2": 3,
-    "IN3": 4,
-    "IN4": 5,
-    "ENA": 6,
-    "ENB": 7,
-    "PWM_FREQ": 1000,
-}
-
-MPU_CONFIG = {"i2c_id": 1, "sda_pin": 26, "scl_pin": 27, "address": 0x68}
+# Load constants
+MOTOR_CONFIG = params.MOTOR_CONFIG
+COMMANDS = params.COMMANDS
 
 # Status LED
 status_led = Pin("LED", Pin.OUT)
-
-# Define the commands and their descriptions
-COMMANDS = {
-    "1": {"action": "START", "description": "Start balancing"},
-    "2": {"action": "STOP", "description": "Stop all motors"},
-    "3": {"action": "DRIVE", "description": "Drive with speed & turn (e.g., 3 20 5)"},
-    "4": {"action": "TURN", "description": "Turn by angle (e.g., 4 90 1)"},
-    "5": {"action": "CONFIG", "description": "Update configuration"},
-    "6": {"action": "CALIBRATE", "description": "Start calibration procedure"},
-    "7": {"action": "HELP", "description": "Show this help"},
-    "8": {"action": "STATUS", "description": "Show current robot status"},
-    "9": {"action": "RESET", "description": "Reset the robot"},
-}
 
 
 class SelfBalancingRobot:
@@ -56,7 +35,7 @@ class SelfBalancingRobot:
         # Wrapper for async callback
         def command_callback(cmd):
             asyncio.create_task(self.handle_command(cmd))
-        
+
         self.ble = BLEReceiver()
         self.ble.set_command_callback(command_callback)
 
@@ -223,6 +202,10 @@ class SelfBalancingRobot:
                 self.show_status()
                 return
 
+            else:
+                print(f"Action not implemented: {action}")
+                return
+
         # If we get here, it's an unrecognized command
         print(f"Unknown command: {cmd}")
         self.send_help_message()  # Show available commands
@@ -302,7 +285,7 @@ class SelfBalancingRobot:
         self.speed = 0
         self.turn = 0
         self.running = True
-        
+
         print(
             f"Entering main loop with speed={self.speed}, turn={self.turn}, running={self.running}"
         )
@@ -311,7 +294,9 @@ class SelfBalancingRobot:
             while self.running:
                 # Update driving with current speed and turn
                 print(f"Calling driver.forward({self.speed}, {self.turn})")
-                angle, left, right, speed, acceleration = self.driver.forward(target_speed=self.speed, turn_bias=self.turn)
+                angle, left, right, speed, acceleration = self.driver.forward(
+                    target_speed=self.speed, turn_bias=self.turn
+                )
                 print(
                     f"forward() result: angle={angle:.2f}, left={left}, right={right}"
                 )
@@ -394,6 +379,7 @@ def calibration_mode(robot):
     else:
         print("Invalid choice")
 
+
 async def main():
     """Program entry point."""
     robot = SelfBalancingRobot()
@@ -404,18 +390,18 @@ async def main():
     print("3 <speed> [turn]: Set drive parameters (speed, optional turn)")
     print("4 <angle> <direction>: Turn by specified angle (1=right, -1=left)")
     print("7: Show help")
-    
+
     # Start the BLE listener immediately
     ble_task = asyncio.create_task(robot.ble_listener())
-    
+
     # Run telemetry task in the background
-    last_time = time.time()   
+    last_time = time.time()
     try:
         while True:
             if time.time() - last_time >= 1:
                 robot.send_telemetry()
                 last_time = time.time()
-            
+
             # Process any pending BLE commands
             await asyncio.sleep(0.1)  # Prevent CPU overload
 
@@ -429,6 +415,7 @@ async def main():
             await ble_task
         except asyncio.CancelledError:
             pass
+
 
 if __name__ == "__main__":
     asyncio.run(main())

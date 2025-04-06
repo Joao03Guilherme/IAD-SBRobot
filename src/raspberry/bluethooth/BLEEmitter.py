@@ -1,6 +1,6 @@
 from bleak import BleakClient
 from bleak import BleakScanner
-import bluethooth.BLEParameters as params
+import parameters as params
 
 
 class BLEEmitter:

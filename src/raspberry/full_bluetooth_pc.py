@@ -1,22 +1,12 @@
 import asyncio
 from bluethooth.BLEEmitter import BLEEmitter
+import parameters as params
 
 """
 THIS CODE SHOULD BE RAN IN THE PC
 """
 
-# Commands matching those in full_prototype.py
-COMMANDS = {
-    "1": {"action": "START", "description": "Start balancing"},
-    "2": {"action": "STOP", "description": "Stop all motors"},
-    "3": {"action": "DRIVE", "description": "Drive with speed & turn (e.g., 3 20 5)"},
-    "4": {"action": "TURN", "description": "Turn by angle (e.g., 4 90 1)"},
-    "5": {"action": "CONFIG", "description": "Update configuration"},
-    "6": {"action": "CALIBRATE", "description": "Start calibration procedure"},
-    "7": {"action": "HELP", "description": "Show this help"},
-    "8": {"action": "STATUS", "description": "Show current robot status"},
-    "9": {"action": "RESET", "description": "Reset the robot"},
-}
+COMMANDS = params.COMMANDS
 
 
 async def interactive_mode(controller):
@@ -66,6 +56,7 @@ async def main():
     finally:
         # Always disconnect properly
         await controller.disconnect()
+
 
 # Run the main function
 if __name__ == "__main__":

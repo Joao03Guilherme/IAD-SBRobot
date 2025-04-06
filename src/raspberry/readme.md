@@ -67,5 +67,5 @@ Script para computador que se conecta ao robô via Bluetooth, permitindo o envio
   - ENB → GP7
 - Econders:
 
-  - pinA -> 22
-  - pinB -> 28
+  - pinA -> GP22
+  - pinB -> GP28
