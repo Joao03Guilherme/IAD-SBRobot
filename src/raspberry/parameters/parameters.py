@@ -1,5 +1,4 @@
 import json
-import os
 
 config_path = "parameters/config.json"
 
