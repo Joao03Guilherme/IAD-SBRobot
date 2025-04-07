@@ -1,0 +1,99 @@
+{
+    "MOTOR_CONFIG": {
+      "IN1": 2,
+      "IN2": 3,
+      "IN3": 4,
+      "IN4": 5,
+      "ENA": 6,
+      "ENB": 7,
+      "PWM_FREQ": 1000
+    },
+    "MPU_CONFIG": {
+      "i2c_id": 1,
+      "sda_pin": 26,
+      "scl_pin": 27,
+      "address": 104,
+      "accel_xout_h": 59,
+      "accel_xout_l": 60,
+      "accel_yout_h": 61,
+      "accel_yout_l": 62,
+      "accel_zout_h": 63,
+      "accel_zout_l": 64,
+      "gyro_xout_h": 67,
+      "gyro_xout_l": 68,
+      "gyro_yout_h": 69,
+      "gyro_yout_l": 70,
+      "gyro_zout_h": 71,
+      "gyro_zout_l": 72,
+      "bias_x": -1064.831,
+      "bias_y": 224.058,
+      "bias_z": -1357.831,
+      "gyro_scale_factor": 131.0,
+      "filter_time_constant": 200
+    },
+    "PID_CONFIG": {
+      "sample_time": 0.0001,
+      "kp": 50,
+      "ki": 30,
+      "kd": 90,
+      "max_safe_tilt": 100,
+      "max_acceleration": 10,
+      "acceleration_smoothing": 0.2,
+      "k_acceleration": 2.0,
+      "k_torque_per_pw": 0.5,
+      "drag": 1.0,
+      "alpha": 0.97
+    },
+    "ENCODER_CONFIG": {
+      "pin_a": 22,
+      "pin_b": 28,
+      "pulses_per_rev": 20,
+      "wheel_diameter": 0.067,
+      "buffer_size": 5,
+      "measurement_interval_ms": 70
+    },
+    "COMMANDS": {
+      "1": {
+        "action": "START",
+        "description": "Start balancing"
+      },
+      "2": {
+        "action": "STOP",
+        "description": "Stop all motors"
+      },
+      "3": {
+        "action": "DRIVE",
+        "description": "Drive with speed & turn (e.g., 3 20 5)"
+      },
+      "4": {
+        "action": "TURN",
+        "description": "Turn by angle (e.g., 4 90 1)"
+      },
+      "5": {
+        "action": "CONFIG",
+        "description": "Update configuration"
+      },
+      "6": {
+        "action": "CALIBRATE",
+        "description": "Start calibration procedure"
+      },
+      "7": {
+        "action": "HELP",
+        "description": "Show this help"
+      },
+      "8": {
+        "action": "STATUS",
+        "description": "Show current robot status"
+      },
+      "9": {
+        "action": "RESET",
+        "description": "Reset the robot"
+      }
+    },
+    "ROBOT_SERVICE_UUID": "19B10000-E8F2-537E-4F6C-D104768A1214",
+    "CONTROL_CHAR_UUID": "19B10001-E8F2-537E-4F6C-D104768A1214",
+    "TELEMETRY_CHAR_UUID": "19B10002-E8F2-537E-4F6C-D104768A1214",
+    "PICO_NAME": "PicoBot",
+    "PICO_ADRESS": "33844EF1-F428-5A3B-DF48-83DFC12F9890"
+  }
+  
