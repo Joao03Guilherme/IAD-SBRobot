@@ -258,7 +258,7 @@ class SelfBalancingRobot:
 
             elif action == "CALIBRATE":
                 print("Starting calibration...")
-                # self.angle_sensor.calibrate()
+                self.driver.mpu.calibrate_gyro()
                 return
 
             elif action == "STATUS":

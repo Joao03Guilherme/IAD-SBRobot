@@ -20,8 +20,11 @@ class BLEReceiver:
     def __init__(self, name=params.PICO_NAME):
         """Initialize the BLE controller with device name"""
         self.name = name
+        print(f"Initializing BLE as '{name}'...")
         self.ble = bluetooth.BLE()
+        print("BLE instance created")
         self.ble.active(True)
+        print("BLE activated")
 
         # Connection status
         self.connected = False
@@ -31,13 +34,17 @@ class BLEReceiver:
         self.command_callback = None
 
         # Register services
+        print("Registering services...")
         self._register_services()
+        print("Services registered")
 
         # Register IRQ handler
         self.ble.irq(self._irq_handler)
+        print("IRQ handler registered")
 
         # Start advertising
         self._advertise()
+        print("Advertising started")
 
         print(f"BLE initialized as '{name}'")
 

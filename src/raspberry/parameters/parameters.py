@@ -1,10 +1,7 @@
-import json
+from parameters.parameters_aux import data
 
 config_path = "parameters/config.json"
-
-# Load JSON data
-with open(config_path, "r") as f:
-    config = json.load(f)
+config = data
 
 # Assign variables
 MOTOR_CONFIG = config["MOTOR_CONFIG"]

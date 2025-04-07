@@ -2,7 +2,7 @@ import math
 import time
 from machine import I2C, Pin
 import parameters.parameters as params
-import parameters.parameters_aux as params_aux
+import parameters.parameters_aux as paux
 
 
 class MPU6050:
@@ -138,32 +138,36 @@ class MPU6050:
         )
 
         return self.angle_x, self.angle_y, self.angle_z
-    
 
-if __name__ == "__main__":
-    # Calibrate the MPU6050 using 1000000 samples
-    mpu = MPU6050()
-    mpu.initialize_mpu()
-    bias_x, bias_y, bias_z = 0, 0, 0
-    num_samples = 1000000
-    for _ in range(num_samples):
-        gx, gy, gz = mpu.read_gyro()
-        bias_x += gx
-        bias_y += gy
-        bias_z += gz
-    bias_x /= num_samples
-    bias_y /= num_samples
-    bias_z /= num_samples
-    print("Bias X:", bias_x)
-    print("Bias Y:", bias_y)
-    print("Bias Z:", bias_z)
+    def calibrate_gyro(self, num_samples=1000):
+        # Calibrate the MPU6050 using 1000000 samples
+        bias_x, bias_y, bias_z = 0, 0, 0
+        for _ in range(num_samples):
+            gx, gy, gz = self.read_gyro()
+            bias_x += gx
+            bias_y += gy
+            bias_z += gz
+        bias_x /= num_samples
+        bias_y /= num_samples
+        bias_z /= num_samples
+        print("Bias X:", bias_x)
+        print("Bias Y:", bias_y)
+        print("Bias Z:", bias_z)
 
-    params_aux.change_gyro_bias(bias_x, bias_y, bias_z)
-    print("Bias values updated in config.json")
+        set_bias_x = params.MPU_CONFIG['bias_x'] + bias_x
+        set_bias_y = params.MPU_CONFIG['bias_y'] + bias_y
+        set_bias_z = params.MPU_CONFIG['bias_z'] + bias_z 
 
-    
+        self.BIAS_X = set_bias_x
+        self.BIAS_Y = set_bias_y
+        self.BIAS_Z = set_bias_z
+
+        paux.change_gyro_bias(set_bias_x, set_bias_y, set_bias_z)
+        print("Bias values updated in config.json")
+
         
+            
 
-        
-        
+            
+            
 
