@@ -92,6 +92,11 @@ class SelfBalancingRobot:
         """Update robot configuration parameters."""
         param = param.upper()
         try:
+            # Convert value to float explicitly
+            value = float(value)
+            
+            print(f"Updating {param} to {value}")
+            
             if param == "KP":
                 p_aux.change_kp(value)
                 self.driver.balance_kp = value
@@ -110,9 +115,16 @@ class SelfBalancingRobot:
             else:
                 print(f"Unknown parameter: {param}")
                 return
-            print(f"Updated {param} to {value}")
+                
+            # Add these debug prints to verify the update worked
+            print(f"✓ Updated {param} to {value}")
+            if self.ble.connected:
+                self.ble.send_telemetry(f"Config updated: {param}={value}")
         except Exception as e:
-            print(f"Error updating config: {e}")
+            error_msg = f"Error updating config: {e}"
+            print(error_msg)
+            if self.ble.connected:
+                self.ble.send_telemetry(f"ERROR: {error_msg}")
 
     def send_telemetry(self):
         """Send robot telemetry data via BLE."""
