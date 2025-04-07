@@ -1,5 +1,5 @@
 import json
-import parameters
+import parameters.parameters as parameters
 
 config_path = "parameters/config.json"
 data = {}
