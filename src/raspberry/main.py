@@ -46,7 +46,6 @@ class SelfBalancingRobot:
         self.turn = 0
 
         print("Robot initialized successfully!")
-        self.send_help_message()
 
     async def ble_listener(self):
         """Listen for BLE commands and handle them."""
@@ -254,6 +253,9 @@ class SelfBalancingRobot:
                 print("Showing status...")
                 self.show_status()
                 return
+            
+            elif action == "RESET":
+                self.reset()
 
             else:
                 print(f"Action not implemented: {action}")
@@ -261,7 +263,6 @@ class SelfBalancingRobot:
 
         # If we get here, it's an unrecognized command
         print(f"Unknown command: {cmd}")
-        self.send_help_message()  # Show available commands
 
     async def main_loop(self):
         """Main control loop."""
