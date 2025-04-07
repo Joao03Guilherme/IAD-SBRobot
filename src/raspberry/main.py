@@ -45,9 +45,6 @@ class SelfBalancingRobot:
         self.speed = 0
         self.turn = 0
 
-        print("Robot initialized successfully!")
-        self.send_help_message()
-
     async def ble_listener(self):
         """Listen for BLE commands and handle them."""
         while True:
@@ -261,7 +258,6 @@ class SelfBalancingRobot:
 
         # If we get here, it's an unrecognized command
         print(f"Unknown command: {cmd}")
-        self.send_help_message()  # Show available commands
 
     async def main_loop(self):
         """Main control loop."""
