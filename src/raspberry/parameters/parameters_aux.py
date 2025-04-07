@@ -81,3 +81,20 @@ def change_sample_time(sample_time):
     parameters.PID_CONFIG["sample_time"] = sample_time
 
     save_config()
+
+
+def change_max_safe_tilt(max_safe_tilt):
+    """
+    Change the max_tilt value in the config.json file.
+    """
+
+    if not isinstance(max_safe_tilt, float):
+        raise ValueError("max_safe_tilt must be a float")
+
+    if max_safe_tilt < 0:
+        raise ValueError("max_safe_tilt must be greater than or equal to 0")
+
+    data["MAX_SAFE_TILT"] = max_safe_tilt
+    parameters.MAX_SAFE_TILT = max_safe_tilt
+
+    save_config()

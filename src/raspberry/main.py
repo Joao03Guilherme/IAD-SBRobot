@@ -11,7 +11,7 @@ from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
 import parameters.parameters as params
-import json
+import parameters.parameters_aux as p_aux
 
 # Load constants
 MOTOR_CONFIG = params.MOTOR_CONFIG
@@ -95,17 +95,20 @@ class SelfBalancingRobot:
         """Update robot configuration parameters."""
         param = param.upper()
         try:
-            if param == "TARGET":
-                self.driver.balance_target = value
-            elif param == "KP":
+            if param == "KP":
+                p_aux.change_kp(value)
                 self.driver.balance_kp = value
             elif param == "KI":
+                p_aux.change_ki(value)
                 self.driver.balance_ki = value
             elif param == "KD":
+                p_aux.change_kd(value)
                 self.driver.balance_kd = value
             elif param == "SAMPLE":
+                p_aux.change_sample_time(value)
                 self.driver.sample_time = value
             elif param == "MAXTILT":
+                p_aux.change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value
             else:
                 print(f"Unknown parameter: {param}")
@@ -244,12 +247,7 @@ class SelfBalancingRobot:
 
             elif action == "CALIBRATE":
                 print("Starting calibration...")
-                self.angle_sensor.calibrate()
-                return
-
-            elif action == "HELP":
-                print("Showing help...")
-                self.send_help_message()
+                # self.angle_sensor.calibrate()
                 return
 
             elif action == "STATUS":
