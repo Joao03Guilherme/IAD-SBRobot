@@ -251,6 +251,10 @@ class SelfBalancingRobot:
                 print("Showing status...")
                 self.show_status()
                 return
+            
+            elif action == "RESET":
+                self.reset()
+                print("Resetting robot...")
 
             else:
                 print(f"Action not implemented: {action}")
