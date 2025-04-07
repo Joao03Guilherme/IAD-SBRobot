@@ -1,7 +1,13 @@
 import json
+import os
 
-# Load JSON data
-with open("config.json", "r") as f:
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Build the path to config.json
+config_path = os.path.join(script_dir, "config.json")
+
+# Load JSON data with absolute path
+with open(config_path, "r") as f:
     config = json.load(f)
 
 # Assign variables

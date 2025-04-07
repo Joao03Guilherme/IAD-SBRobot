@@ -1,6 +1,6 @@
 import asyncio
 from bluethooth.BLEEmitter import BLEEmitter
-import raspberry.parameters.parameters as params
+import parameters.parameters as params
 
 """
 THIS CODE SHOULD BE RAN IN THE PC

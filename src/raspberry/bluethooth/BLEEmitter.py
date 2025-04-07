@@ -1,6 +1,6 @@
 from bleak import BleakClient
 from bleak import BleakScanner
-import raspberry.parameters.parameters as params
+import parameters.parameters as params
 
 
 class BLEEmitter:

@@ -1,7 +1,7 @@
 import bluetooth
 import json
 from machine import Pin
-import raspberry.parameters.parameters as params
+import parameters.parameters as params
 
 """
 THIS CODE SHOULD BE RAN IN THE raspberry PI
