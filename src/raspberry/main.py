@@ -11,6 +11,7 @@ from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
 import parameters.parameters as params
+import json
 
 # Load constants
 MOTOR_CONFIG = params.MOTOR_CONFIG
@@ -63,25 +64,10 @@ class SelfBalancingRobot:
         self.running = False
         self.driver.stop()
 
-    def send_help_message(self):
-        """Send help information with available commands."""
-        help_text = "Available commands:\n"
-        for cmd_num, cmd_info in COMMANDS.items():
-            help_text += (
-                f"{cmd_num}: {cmd_info['action']} - {cmd_info['description']}\n"
-            )
-
-        help_text += "\nExamples:\n"
-        help_text += "1 - Start balancing\n"
-        help_text += "2 - Stop motors\n"
-        help_text += "3 20 5 - Drive forward at speed 20, turn bias 5\n"
-        help_text += "4 45 1 - Turn 45 degrees to the right\n"
-        help_text += "7 - Show this help\n"
-
-        print(help_text)
-        if self.ble.connected:
-            # Use send_telemetry instead of send_message
-            self.ble.send_telemetry(help_text)
+    async def reset(self):
+        """Rest the Driving class."""
+        self.stop()
+        self.driver = Driving(self.motor_controller)
 
     def show_status(self):
         """Show current robot status."""
@@ -104,6 +90,75 @@ class SelfBalancingRobot:
         if self.ble.connected:
             # Use send_telemetry instead of send_message
             self.ble.send_telemetry(status_text)
+
+    def _update_config(self, param, value):
+        """Update robot configuration parameters."""
+        param = param.upper()
+        try:
+            if param == "TARGET":
+                self.driver.balance_target = value
+            elif param == "KP":
+                self.driver.balance_kp = value
+            elif param == "KI":
+                self.driver.balance_ki = value
+            elif param == "KD":
+                self.driver.balance_kd = value
+            elif param == "SAMPLE":
+                self.driver.sample_time = value
+            elif param == "MAXTILT":
+                self.driver.max_safe_tilt = value
+            else:
+                print(f"Unknown parameter: {param}")
+                return
+            print(f"Updated {param} to {value}")
+        except Exception as e:
+            print(f"Error updating config: {e}")
+
+    def send_telemetry(self):
+        """Send robot telemetry data via BLE."""
+        if not self.ble.connected:
+            return
+
+        # Get the latest sensor data
+        angle = 0
+        if len(self.driver.angle_data) > 0:
+            angle = self.driver.angle_data[-1]
+
+        # Create telemetry string (simpler than JSON)
+        telemetry = (
+            f"A:{angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
+        )
+        if self.driver.left_power_data and self.driver.right_power_data:
+            telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"
+
+        # Send telemetry
+        self.ble.send_telemetry(telemetry)
+
+    def find_balance_point(self):
+        """Utility function to find the natural balance point of the robot.
+        This helps determine the optimal balance_target value."""
+
+        print("Finding balance point. Place the robot upright and keep it still...")
+
+        samples = []
+        duration = 5  # seconds
+        start_time = time.time()
+
+        # Collect angle data for several seconds
+        while time.time() - start_time < duration:
+            angle = self.driver.angle_data[-1] if self.driver.angle_data else 0
+            samples.append(angle)
+            time.sleep(0.05)
+            status_led.toggle()  # Blink during measurement
+
+        # Calculate average angle
+        if samples:
+            avg_angle = sum(samples) / len(samples)
+            print(f"Balance point found at approximately {avg_angle:.2f} degrees")
+            return avg_angle
+        else:
+            print("Error: No samples collected")
+            return None
 
     async def handle_command(self, cmd):
         """Process BLE commands."""
@@ -210,75 +265,6 @@ class SelfBalancingRobot:
         print(f"Unknown command: {cmd}")
         self.send_help_message()  # Show available commands
 
-    def _update_config(self, param, value):
-        """Update robot configuration parameters."""
-        param = param.upper()
-        try:
-            if param == "TARGET":
-                self.driver.balance_target = value
-            elif param == "KP":
-                self.driver.balance_kp = value
-            elif param == "KI":
-                self.driver.balance_ki = value
-            elif param == "KD":
-                self.driver.balance_kd = value
-            elif param == "SAMPLE":
-                self.driver.sample_time = value
-            elif param == "MAXTILT":
-                self.driver.max_safe_tilt = value
-            else:
-                print(f"Unknown parameter: {param}")
-                return
-            print(f"Updated {param} to {value}")
-        except Exception as e:
-            print(f"Error updating config: {e}")
-
-    def send_telemetry(self):
-        """Send robot telemetry data via BLE."""
-        if not self.ble.connected:
-            return
-
-        # Get the latest sensor data
-        angle = 0
-        if len(self.driver.angle_data) > 0:
-            angle = self.driver.angle_data[-1]
-
-        # Create telemetry string (simpler than JSON)
-        telemetry = (
-            f"A:{angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
-        )
-        if self.driver.left_power_data and self.driver.right_power_data:
-            telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"
-
-        # Send telemetry
-        self.ble.send_telemetry(telemetry)
-
-    def find_balance_point(self):
-        """Utility function to find the natural balance point of the robot.
-        This helps determine the optimal balance_target value."""
-
-        print("Finding balance point. Place the robot upright and keep it still...")
-
-        samples = []
-        duration = 5  # seconds
-        start_time = time.time()
-
-        # Collect angle data for several seconds
-        while time.time() - start_time < duration:
-            angle = self.driver.angle_data[-1] if self.driver.angle_data else 0
-            samples.append(angle)
-            time.sleep(0.05)
-            status_led.toggle()  # Blink during measurement
-
-        # Calculate average angle
-        if samples:
-            avg_angle = sum(samples) / len(samples)
-            print(f"Balance point found at approximately {avg_angle:.2f} degrees")
-            return avg_angle
-        else:
-            print("Error: No samples collected")
-            return None
-
     async def main_loop(self):
         """Main control loop."""
         last_telemetry_time = 0
@@ -325,71 +311,9 @@ class SelfBalancingRobot:
             print("Robot stopped")
 
 
-def calibration_mode(robot):
-    """Interactive mode to calibrate the robot."""
-    print("==== Calibration Mode ====")
-    print("1. Find balance point")
-    print("2. Test motors")
-    print("3. Exit calibration")
-
-    choice = input("Enter choice (1-3): ")
-
-    if choice == "1":
-        balance_point = robot.find_balance_point()
-        if balance_point is not None:
-            print(f"Set balance_target to {balance_point:.2f} in your configuration")
-
-    elif choice == "2":
-        print("Testing motors...")
-        motors = robot.motor_controller
-
-        try:
-            # Test left motor
-            print("Testing left motor forward")
-            motors.motor_a(30)
-            time.sleep(1)
-            motors.motor_a(0)
-            time.sleep(0.5)
-
-            print("Testing left motor backward")
-            motors.motor_a(-30)
-            time.sleep(1)
-            motors.motor_a(0)
-            time.sleep(0.5)
-
-            # Test right motor
-            print("Testing right motor forward")
-            motors.motor_b(30)
-            time.sleep(1)
-            motors.motor_b(0)
-            time.sleep(0.5)
-
-            print("Testing right motor backward")
-            motors.motor_b(-30)
-            time.sleep(1)
-            motors.motor_b(0)
-
-        finally:
-            motors.stop()
-            print("Motor test complete")
-
-    elif choice == "3":
-        return
-
-    else:
-        print("Invalid choice")
-
-
 async def main():
     """Program entry point."""
     robot = SelfBalancingRobot()
-
-    print("Robot ready. Send commands via BLE:")
-    print("1: Start balancing")
-    print("2: Stop")
-    print("3 <speed> [turn]: Set drive parameters (speed, optional turn)")
-    print("4 <angle> <direction>: Turn by specified angle (1=right, -1=left)")
-    print("7: Show help")
 
     # Start the BLE listener immediately
     ble_task = asyncio.create_task(robot.ble_listener())

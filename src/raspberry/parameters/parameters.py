@@ -1,8 +1,6 @@
 import json
 import os
 
-# In MicroPython, we use simpler path handling
-# Directly specify the config file in the same directory
 config_path = "parameters/config.json"
 
 # Load JSON data
