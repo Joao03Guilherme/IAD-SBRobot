@@ -1,12 +1,11 @@
 import json
 import os
 
-# Get the directory where this script is located
-script_dir = os.path.dirname(os.path.abspath(__file__))
-# Build the path to config.json
-config_path = os.path.join(script_dir, "config.json")
+# In MicroPython, we use simpler path handling
+# Directly specify the config file in the same directory
+config_path = "parameters/config.json"
 
-# Load JSON data with absolute path
+# Load JSON data
 with open(config_path, "r") as f:
     config = json.load(f)
 

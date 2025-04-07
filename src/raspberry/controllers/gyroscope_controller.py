@@ -6,7 +6,7 @@ import parameters.parameters as params
 
 class MPU6050:
     # MPU6050 I2C Address
-    MPU_ADDR = params.MPU_CONFIG["adress"]
+    MPU_ADDR = params.MPU_CONFIG["address"]
 
     # Register addresses
     ACCEL_XOUT_H = params.MPU_CONFIG["accel_xout_h"]
