@@ -98,3 +98,27 @@ def change_max_safe_tilt(max_safe_tilt):
     parameters.MAX_SAFE_TILT = max_safe_tilt
 
     save_config()
+
+def change_gyro_bias(bias_x, bias_y, bias_z):
+    """
+    Change the gyro bias values in the config.json file.
+    """
+
+    if not isinstance(bias_x, float):
+        raise ValueError("bias_x must be a float")
+
+    if not isinstance(bias_y, float):
+        raise ValueError("bias_y must be a float")
+
+    if not isinstance(bias_z, float):
+        raise ValueError("bias_z must be a float")
+
+    data["MPU_CONFIG"]["bias_x"] = bias_x
+    data["MPU_CONFIG"]["bias_y"] = bias_y
+    data["MPU_CONFIG"]["bias_z"] = bias_z
+
+    parameters.MPU_CONFIG["bias_x"] = bias_x
+    parameters.MPU_CONFIG["bias_y"] = bias_y
+    parameters.MPU_CONFIG["bias_z"] = bias_z
+
+    save_config()

@@ -88,7 +88,7 @@ class SelfBalancingRobot:
             # Use send_telemetry instead of send_message
             self.ble.send_telemetry(status_text)
 
-    async def _update_config(self, param, value):
+    def _update_config(self, param, value):
         """Update robot configuration parameters."""
         param = param.upper()
         try:
@@ -229,11 +229,13 @@ class SelfBalancingRobot:
                 return
 
             elif action == "CONFIG":
+                print("Configuring robot...")
                 if len(parts) >= 3:
                     param = parts[1].upper()
                     try:
+                        print(f"Configuring {param}...")
                         value = float(parts[2])
-                        await self._update_config(param, value)
+                        self._update_config(param, value)
                         return
                     except ValueError:
                         print("Invalid configuration value")
