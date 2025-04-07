@@ -10,7 +10,7 @@ import asyncio
 from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
-import parameters as params
+import raspberry.parameters.parameters as params
 
 # Load constants
 MOTOR_CONFIG = params.MOTOR_CONFIG
@@ -383,13 +383,7 @@ def calibration_mode(robot):
 async def main():
     """Program entry point."""
     robot = SelfBalancingRobot()
-
-    print("Robot ready. Send commands via BLE:")
-    print("1: Start balancing")
-    print("2: Stop")
-    print("3 <speed> [turn]: Set drive parameters (speed, optional turn)")
-    print("4 <angle> <direction>: Turn by specified angle (1=right, -1=left)")
-    print("7: Show help")
+    print("Robot ready. Send commands via BLE")
 
     # Start the BLE listener immediately
     ble_task = asyncio.create_task(robot.ble_listener())

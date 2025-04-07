@@ -9,7 +9,7 @@ from controllers.motor_controller import MotorController
 from controllers.encoder_controller import WheelEncoder
 from controllers.gyroscope_controller import MPU6050
 
-import parameters as params
+import raspberry.parameters.parameters as params
 
 
 class Driving:

@@ -1,6 +1,6 @@
 import asyncio
 from bluethooth.BLEEmitter import BLEEmitter
-import parameters as params
+import raspberry.parameters.parameters as params
 
 """
 THIS CODE SHOULD BE RAN IN THE PC
@@ -16,13 +16,6 @@ async def interactive_mode(controller):
         print("Available Commands:")
         for cmd_num, cmd_info in COMMANDS.items():
             print(f"{cmd_num}: {cmd_info['action']} - {cmd_info['description']}")
-
-        print("\nExamples:")
-        print("1 - Start balancing")
-        print("2 - Stop motors")
-        print("3 20 5 - Drive forward at speed 20, turn bias 5")
-        print("4 45 1 - Turn 45 degrees to the right")
-        print("7 - Show help")
         print("q - Quit this program")
 
         choice = input("\nEnter command: ")

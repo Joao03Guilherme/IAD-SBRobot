@@ -1,7 +1,7 @@
 import math
 import time
 from machine import I2C, Pin
-import parameters as params
+import raspberry.parameters.parameters as params
 
 
 class MPU6050:
