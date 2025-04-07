@@ -1,13 +1,20 @@
 from bleak import BleakClient
 from bleak import BleakScanner
 import parameters.parameters as params
-
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from collections import deque
+import asyncio
 
 class BLEEmitter:
     def __init__(self, device_address=None, device_name=params.PICO_NAME):
         self.device_address = device_address
         self.device_name = device_name
         self.client = None
+        # For plotting angle
+        self.angle_buffer = deque(maxlen=100)
+        self.plot_initialized = False
+
 
     async def connect(self):
         """Connect to the PicoRobot"""
@@ -40,6 +47,7 @@ class BLEEmitter:
                     params.TELEMETRY_CHAR_UUID, self._on_telemetry
                 )
                 print("Subscribed to telemetry notifications")
+                self.start_angle_plot()
                 return True
             else:
                 print("Failed to connect")
@@ -100,7 +108,9 @@ class BLEEmitter:
                 # Print in a more readable format
                 print("Parsed telemetry data:")
                 if "A" in telemetry_dict:
-                    print(f"  Angle: {telemetry_dict['A']}°")
+                    angle = float(telemetry_dict["A"])
+                    print(f"  Angle: {angle}°")
+                    self.angle_buffer.append(angle)
                 if "S" in telemetry_dict:
                     print(f"  Speed: {telemetry_dict['S']}")
                 if "T" in telemetry_dict:
@@ -114,3 +124,24 @@ class BLEEmitter:
         except:
             # If can't decode, show raw data
             print(f"📊 Raw telemetry: {data}")
+
+    def start_angle_plot(self):
+        """Start a rolling plot for the angle value."""
+        if self.plot_initialized:
+            return
+
+        self.plot_initialized = True
+        self.fig, self.ax = plt.subplots()
+        self.line, = self.ax.plot([], [], lw=2)
+        self.ax.set_ylim(-180, 180)  # Assuming angles range from -180° to 180°
+        self.ax.set_xlim(0, 100)
+        self.ax.set_title("📈 Real-time Angle Plot")
+        self.ax.set_xlabel("Time (ticks)")
+        self.ax.set_ylabel("Angle (°)")
+
+        def update(frame):
+            self.line.set_data(range(len(self.angle_buffer)), list(self.angle_buffer))
+            return self.line,
+
+        self.ani = FuncAnimation(self.fig, update, interval=200, blit=True)
+        plt.show()
