@@ -45,8 +45,6 @@ class SelfBalancingRobot:
         self.speed = 0
         self.turn = 0
 
-        print("Robot initialized successfully!")
-
     async def ble_listener(self):
         """Listen for BLE commands and handle them."""
         while True:
@@ -253,9 +251,6 @@ class SelfBalancingRobot:
                 print("Showing status...")
                 self.show_status()
                 return
-            
-            elif action == "RESET":
-                self.reset()
 
             else:
                 print(f"Action not implemented: {action}")
