@@ -10,7 +10,7 @@ import asyncio
 from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
-import raspberry.parameters.parameters as params
+import parameters.parameters as params
 
 # Load constants
 MOTOR_CONFIG = params.MOTOR_CONFIG

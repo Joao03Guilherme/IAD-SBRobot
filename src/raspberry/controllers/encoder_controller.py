@@ -2,7 +2,7 @@ from machine import Pin
 import asyncio
 import time
 import math
-import raspberry.parameters.parameters as params
+import parameters.parameters as params
 
 
 class WheelEncoder:
