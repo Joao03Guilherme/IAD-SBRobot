@@ -24,6 +24,8 @@ class Driving:
         self.wheel_encoder_a.start()
         self.wheel_encoder_b.start()
 
+        self.wheel_encoder = self.wheel_encoder_a 
+
         if motor_controller is None:
             motor_config = params.data["MOTOR_CONFIG"]
             # Pass as positional argument, not keyword argument
@@ -117,7 +119,7 @@ class Driving:
         self.balance_target = max(
             -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_target)
         )
-        self.balance_target -= 0.1*(self.wheel_encoder_a.get_distance()+self.wheel_encoder_b.get_distance())/2  # Round to 2 decimal places
+        self.balance_target += 0.033*(self.wheel_encoder_a.get_distance()+self.wheel_encoder_b.get_distance())/2  # Round to 2 decimal places
 
     def balance(self, current_speed=0, target_speed=0):
         """Balance the robot without moving (stationary balancing)."""
@@ -130,6 +132,9 @@ class Driving:
         # Calculate the error relative to the balance target
         self.set_balance_target(current_speed, target_speed)
         error = self.balance_target - current_angle
+
+        print("Target Angle:", self.balance_target)
+        print("Current Angle:", current_angle)
 
         # Calculate time difference
         now = time.time()

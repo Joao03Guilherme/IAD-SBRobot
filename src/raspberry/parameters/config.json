@@ -50,7 +50,7 @@
     "pin_b": 28,
     "pulses_per_rev": 20,
     "wheel_diameter": 0.067,
-    "buffer_size": 5,
+    "buffer_size": 100,
     "measurement_interval_ms": 70
   },
   "COMMANDS": {

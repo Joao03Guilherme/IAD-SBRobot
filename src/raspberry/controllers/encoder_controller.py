@@ -149,6 +149,8 @@ class WheelEncoder:
     def get_distance(self):
         """Calculate the distance traveled based on the RPM and time."""
         rpms = self.rpm_buffer
+        return sum(rpms)/len(rpms) 
+    
         times = [t / 1000 for t in self.time_buffer]
         wheel_circumference = math.pi * self.WHEEL_DIAMETER
         return sum(
