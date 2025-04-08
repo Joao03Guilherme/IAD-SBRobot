@@ -11,7 +11,9 @@ class WheelEncoder:
         self.PULSES_PER_REV = pulses_per_rev
         self.WHEEL_DIAMETER = wheel_diameter
 
+        self.last_pulse_count = 0
         self.pulse_count = 0
+        self.motor_direction = 0
         self.encoder = None
 
         # Buffers for storing historical data (last 50 points)
@@ -40,7 +42,7 @@ class WheelEncoder:
         self.encoder.irq(trigger=Pin.IRQ_RISING, handler=self._irq_handler)
 
     def _irq_handler(self, pin):
-        self.pulse_count += 1
+        self.pulse_count += self.motor_direction
 
     async def run_background_measurement(self):
         """Continuously measures RPM and maintains the data buffer."""
@@ -54,8 +56,8 @@ class WheelEncoder:
                 >= self.measurement_interval_ms
             ):
                 # Get current RPM
-                count = self.pulse_count
-                self.pulse_count = 0
+                count = self.pulse_count-self.last_pulse_count
+                self.pulse_count = slef.last_pulse_count
 
                 # Calculate instant RPM
                 elapsed_ms = time.ticks_diff(current_time, self.last_measurement_time)
@@ -93,22 +95,16 @@ class WheelEncoder:
         """Returns the entire RPM buffer."""
         return self.rpm_buffer
 
-    def get_speed(self, direction=1):
+    def get_speed(self):
         """Calculate speed based on the latest RPM."""
         rpm_mean = self.get_rpm()
         wheel_circumference = math.pi * self.WHEEL_DIAMETER
         # Speed in m/s = (RPM * circumference) / 60
         speed_m_s = (rpm_mean * wheel_circumference) / 60
         # Adjust speed based on direction
-        if direction == 1:  # Forward
-            speed_m_s = abs(speed_m_s)
-        elif direction == -1:  # Backward
-            speed_m_s = -abs(speed_m_s)
-        else:
-            speed_m_s = 0  # No movement
         return speed_m_s
 
-    def get_absolute_acceleration(self, direction=1):
+    def get_absolute_acceleration(self):
         """Calculate acceleration based on the buffered RPM data."""
         rpms = self.rpm_buffer
         times = [t / 1000 for t in self.time_buffer]  # Convert to seconds
@@ -138,22 +134,4 @@ class WheelEncoder:
         # Calculate the acceleration in m/s²
         acceleration = (slope * wheel_circumference) / 60
         # Adjust acceleration based on direction
-        if direction == 1:  # Forward
-            acceleration = abs(acceleration)
-        elif direction == -1:  # Backward
-            acceleration = -abs(acceleration)
-        else:
-            acceleration = 0  # No movement
         return acceleration
-    
-    def get_distance(self):
-        """Calculate the distance traveled based on the RPM and time."""
-        rpms = self.rpm_buffer
-        return sum(rpms)/len(rpms) 
-    
-        times = [t / 1000 for t in self.time_buffer]
-        wheel_circumference = math.pi * self.WHEEL_DIAMETER
-        return sum(
-            (rpms * wheel_circumference) / 60 * (t2 - t1)
-            for (t1, rpm1), (t2, rpm2) in zip(zip(times, rpms), zip(times[1:], rpms[1:]))
-        )

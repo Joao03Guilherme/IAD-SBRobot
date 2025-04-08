@@ -115,11 +115,12 @@ class Driving:
             1 + (self.k_torque_per_pw * current_speed) ** 2
         ) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
 
+        # Add a component of stay still
+        self.balance_target += 0.033*(self.wheel_encoder_a.pulse_count+self.wheel_encoder_b.pulse_count)/2  # Round to 2 decimal places
         # Constrain the balance target to safe limits
         self.balance_target = max(
             -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_target)
         )
-        self.balance_target += 0.033*(self.wheel_encoder_a.get_distance()+self.wheel_encoder_b.get_distance())/2  # Round to 2 decimal places
 
     def balance(self, current_speed=0, target_speed=0):
         """Balance the robot without moving (stationary balancing)."""
@@ -161,6 +162,8 @@ class Driving:
         # Apply the same power to both motors to correct the tilt
         self.motors.motor_a(int(balance_power))
         self.motors.motor_b(int(balance_power))
+        self.wheel_encoder_a.motor_direction = 1 if balance_power > 0 else -1
+        self.wheel_encoder_b.motor_direction = 1 if balance_power > 0 else -1
 
         # Optionally, store the computed power for analysis
         self.left_power_data.append(balance_power)
@@ -176,7 +179,7 @@ class Driving:
         Returns:
             (current_angle, left_power, right_power, current_speed, current_acceleration)
         """
-        current_speed = self.wheel_encoder.get_speed(self.direction)
+        current_speed = self.wheel_encoder.get_speed()
 
         # Use the balance method with smoothed target speed
         current_angle, driving_power = self.balance(
@@ -248,9 +251,7 @@ class Driving:
 
         # Get acceleration if we have enough data points
         if len(self.rpm_data) >= 3 and len(self.time_data) >= 3:
-            current_acceleration = self.wheel_encoder.get_absolute_acceleration(
-                self.direction
-            )
+            current_acceleration = self.wheel_encoder.get_absolute_acceleration()
         else:
             current_acceleration = 0
 
