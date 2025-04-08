@@ -162,7 +162,7 @@ class MPU6050:
 
         set_bias_x = self.BIAS_X + bias_x
         set_bias_y = self.BIAS_Y + bias_y
-        set_bias_z = self.BIAS_Z + bias_z 
+        set_bias_z = self.BIAS_Z + bias_z
 
         self.BIAS_X = set_bias_x
         self.BIAS_Y = set_bias_y
@@ -170,10 +170,3 @@ class MPU6050:
 
         change_gyro_bias(set_bias_x, set_bias_y, set_bias_z)
         print("Bias values updated in config.json")
-
-        
-            
-
-            
-            
-

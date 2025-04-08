@@ -5,15 +5,19 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from collections import deque
 
+
 class BLEEmitter:
-    def __init__(self, device_address=params.data["PICO_ADDRESS"], device_name=params.data["PICO_NAME"]):
+    def __init__(
+        self,
+        device_address=params.data["PICO_ADDRESS"],
+        device_name=params.data["PICO_NAME"],
+    ):
         self.device_address = device_address
         self.device_name = device_name
         self.client = None
         # For plotting angle
         self.angle_buffer = deque(maxlen=100)
         self.plot_initialized = False
-
 
     async def connect(self):
         """Connect to the PicoRobot"""
@@ -82,7 +86,9 @@ class BLEEmitter:
             else:
                 command_bytes = command
 
-            await self.client.write_gatt_char(params.data["CONTROL_CHAR_UUID"], command_bytes)
+            await self.client.write_gatt_char(
+                params.data["CONTROL_CHAR_UUID"], command_bytes
+            )
             return True
         except Exception as e:
             print(f"Error sending command: {e}")
@@ -131,7 +137,7 @@ class BLEEmitter:
 
         self.plot_initialized = True
         self.fig, self.ax = plt.subplots()
-        self.line, = self.ax.plot([], [], lw=2)
+        (self.line,) = self.ax.plot([], [], lw=2)
         self.ax.set_ylim(-180, 180)  # Assuming angles range from -180° to 180°
         self.ax.set_xlim(0, 100)
         self.ax.set_title("📈 Real-time Angle Plot")
@@ -140,7 +146,7 @@ class BLEEmitter:
 
         def update(frame):
             self.line.set_data(range(len(self.angle_buffer)), list(self.angle_buffer))
-            return self.line,
+            return (self.line,)
 
         self.ani = FuncAnimation(self.fig, update, interval=200, blit=True)
         plt.show()

@@ -19,7 +19,9 @@ class WheelEncoder:
         self.time_buffer = [0] * params.data["ENCODER_CONFIG"]["buffer_size"]
         self.is_running = False
         self.last_measurement_time = 0
-        self.measurement_interval_ms = params.data["ENCODER_CONFIG"]["measurement_interval_ms"]
+        self.measurement_interval_ms = params.data["ENCODER_CONFIG"][
+            "measurement_interval_ms"
+        ]
 
         # Initialize the encoder
         self.initialize_encoder()
@@ -27,7 +29,9 @@ class WheelEncoder:
     def update_parameters(self):
         self.rpm_buffer = [0] * params.data["ENCODER_CONFIG"]["buffer_size"]
         self.time_buffer = [0] * params.data["ENCODER_CONFIG"]["buffer_size"]
-        self.measurement_interval_ms = params.data["ENCODER_CONFIG"]["measurement_interval_ms"]
+        self.measurement_interval_ms = params.data["ENCODER_CONFIG"][
+            "measurement_interval_ms"
+        ]
 
     def initialize_encoder(self):
         # Configure the encoder pin as input with internal pull-up resistor

@@ -17,6 +17,8 @@ def save_config():
 """
 FOR EVERY CHANGE FUNCTION, THERE MUST BE A CHANGE IN DATA DICT AND SAVE CONFIG
 """
+
+
 def change_kp(kp):
     """
     Change the kp value in the config.json file.
@@ -95,6 +97,7 @@ def change_max_safe_tilt(max_safe_tilt):
     data["MAX_SAFE_TILT"] = max_safe_tilt
 
     save_config()
+
 
 def change_gyro_bias(bias_x, bias_y, bias_z):
     """

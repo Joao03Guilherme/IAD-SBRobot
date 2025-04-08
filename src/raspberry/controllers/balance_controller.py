@@ -75,7 +75,7 @@ class Driving:
         self.accel_smoothing = params.data["PID_CONFIG"][
             "acceleration_smoothing"
         ]  # Smoothing factor for acceleration
-        
+
     def set_balance_target(self, current_speed=0, target_speed=0):
         """Set the balance target angle based on current speed and target speed.
 

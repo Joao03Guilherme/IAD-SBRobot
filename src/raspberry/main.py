@@ -10,7 +10,14 @@ import asyncio
 from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
-from parameters.parameters import data, change_kd, change_ki, change_kp, change_sample_time, change_max_safe_tilt
+from parameters.parameters import (
+    data,
+    change_kd,
+    change_ki,
+    change_kp,
+    change_sample_time,
+    change_max_safe_tilt,
+)
 
 # Load constants
 MOTOR_CONFIG = data["MOTOR_CONFIG"]
@@ -93,9 +100,9 @@ class SelfBalancingRobot:
         try:
             # Convert value to float explicitly
             value = float(value)
-            
+
             print(f"Updating {param} to {value}")
-            
+
             if param == "KP":
                 change_kp(value)
                 self.driver.balance_kp = value
@@ -114,9 +121,9 @@ class SelfBalancingRobot:
             else:
                 print(f"Unknown parameter: {param}")
                 return
-                
+
             # Add these debug prints to verify the update worked
-            self.driver.update_parameters() # Update the parameters in the driver class
+            self.driver.update_parameters()  # Update the parameters in the driver class
             print(f"✓ Updated {param} to {value}")
             if self.ble.connected:
                 self.ble.send_telemetry(f"Config updated: {param}={value}")
@@ -265,7 +272,7 @@ class SelfBalancingRobot:
                 print("Showing status...")
                 self.show_status()
                 return
-            
+
             elif action == "RESET":
                 print("Resetting robot...")
                 await self.reset()
