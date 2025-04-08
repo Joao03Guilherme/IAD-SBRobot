@@ -117,7 +117,6 @@ class SelfBalancingRobot:
                 self.driver.sample_time = value
             elif param == "ALPHA":
                 success = change_alpha(value)
-                self.driver.alpha = value
             elif param == "MAXTILT":
                 success = change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value
