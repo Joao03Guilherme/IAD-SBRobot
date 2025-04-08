@@ -62,7 +62,6 @@ class SelfBalancingRobot:
         """Start the balancing loop."""
         self.running = True
         await asyncio.gather(self.main_loop(), self.ble_listener())
-        
 
     async def reset(self):
         """Rest the Driving class."""
@@ -96,7 +95,7 @@ class SelfBalancingRobot:
         """Update robot configuration parameters."""
         param = param.upper()
         print(f"DEBUG: Starting _update_config with param={param}, value={value}")
-        
+
         try:
             # Convert value to float explicitly
             value = float(value)
@@ -135,7 +134,7 @@ class SelfBalancingRobot:
                 print(f"✗ Failed to update {param}")
                 if self.ble.connected:
                     self.ble.send_telemetry(f"Config update failed: {param}")
-                    
+
         except Exception as e:
             error_msg = f"Error updating config: {e}"
             print(f"EXCEPTION in _update_config: {repr(e)}")
@@ -222,18 +221,21 @@ class SelfBalancingRobot:
                 return
 
             elif action == "DRIVE":
-                if len(parts) >= 2:  # turn bias is optional
+                if len(parts) == 3:
                     try:
                         self.speed = int(parts[1])
-                        self.turn = (
-                            int(parts[2]) if len(parts) > 2 else 0
-                        )  # Make turn optional
+                        self.turn = int(parts[2])
                         print(f"Setting drive: speed={self.speed}, turn={self.turn}")
 
                         # Start the robot if it's not already running
                         if not self.running:
                             print("Auto-starting robot for drive command...")
                             self.start()
+
+                        self.driver.forward(
+                            target_speed=self.speed, turn_bias=self.turn
+                        )
+
                         return
                     except ValueError:
                         print("Invalid speed or turn value")
@@ -259,7 +261,7 @@ class SelfBalancingRobot:
 
             elif action == "CONFIG":
                 print("Configuring robot...")
-                if len(parts) >= 3:
+                if len(parts) == 3:
                     param = parts[1].upper()
                     try:
                         print(f"Configuring {param}...")

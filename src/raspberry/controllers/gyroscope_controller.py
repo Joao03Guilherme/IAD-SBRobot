@@ -46,7 +46,7 @@ class MPU6050:
         self.prev_time = 0
         self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z = 0, 0, 0
         self.angle_accel_x, self.angle_accel_y, self.angle_accel_z = 0, 0, 0
-        self.combined_angle_x, self.combined_angle_y = 0, 0 
+        self.combined_angle_x, self.combined_angle_y = 0, 0
 
         # Initialization now explicitly named
         self.initialize_mpu()
@@ -131,7 +131,7 @@ class MPU6050:
         self.angle_gyro_y += gyro_angle_y
         self.angle_gyro_z += gyro_angle_z
         return self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z
-    
+
     def combined_angle(self):
         # Get current time in milliseconds
         curr_time = time.ticks_ms()
@@ -163,11 +163,11 @@ class MPU6050:
 
         # Read accelerometer angles
         accel_angle_x, accel_angle_y = self.calc_accel_angles()
-        
+
         self.angle_gyro_x += gyro_angle_x
         self.angle_gyro_y += gyro_angle_y
         self.angle_gyro_z += gyro_angle_z
-        
+
         # Complementary filter to combine gyro and accelerometer angles
         self.combined_angle_x = (
             self.alpha * (self.angle_gyro_x) + (1 - self.alpha) * accel_angle_x
@@ -180,14 +180,11 @@ class MPU6050:
             f"Combined Angle X: {self.combined_angle_x}, Combined Angle Y: {self.combined_angle_y}"
         )
 
-        return (
-            self.combined_angle_x,
-            self.combined_angle_y
-        )
-    
+        return (self.combined_angle_x, self.combined_angle_y)
+
     def calibrate_accel(self, num_samples=10000):
         # Calibrate the accelerometer using 1000000 samples
-        bias_x, bias_y= 0, 0
+        bias_x, bias_y = 0, 0
         for _ in range(num_samples):
             ax, ay, az = self.read_accel()
             bias_x += ax

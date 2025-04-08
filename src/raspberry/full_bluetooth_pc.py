@@ -11,27 +11,29 @@ THIS CODE SHOULD BE RAN IN THE PC
 COMMANDS = params.data["COMMANDS"]
 input_queue = queue.Queue()
 
+
 def get_user_input():
     """Function to run in a separate thread to get user input"""
     while True:
         user_input = input("\nEnter command: ")
         input_queue.put(user_input)
-        if user_input.lower() == 'q':
+        if user_input.lower() == "q":
             break
+
 
 async def interactive_mode(controller):
     """Interactive mode to send commands to PicoRobot"""
     # Start a separate thread for user input
     input_thread = threading.Thread(target=get_user_input, daemon=True)
     input_thread.start()
-    
+
     # Print the initial menu
     print("\n=== PicoRobot Control Panel ===")
     print("Available Commands:")
     for cmd_num, cmd_info in COMMANDS.items():
         print(f"{cmd_num}: {cmd_info['action']} - {cmd_info['description']}")
     print("q - Quit this program")
-    
+
     # Process commands from the queue
     running = True
     while running:
@@ -56,17 +58,18 @@ async def interactive_mode(controller):
                 command = f"{choice} {arg1} {arg2}"
             else:
                 command = choice
-                
+
             # Send the command
             print(f"Sending command: {command}")
             await controller.send_command(command)
-            
+
         except queue.Empty:
             # No input available, just continue the loop
             pass
-            
+
         # Allow other asyncio tasks to run (like processing BLE notifications)
         await asyncio.sleep(0.1)
+
 
 async def main():
     """Main function"""

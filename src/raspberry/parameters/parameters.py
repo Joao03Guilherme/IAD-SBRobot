@@ -87,6 +87,7 @@ def change_sample_time(sample_time):
     save_config()
     return True
 
+
 def change_alpha(alpha):
     """
     Change the alpha value in the config.json file.
@@ -140,6 +141,7 @@ def change_gyro_bias(bias_x, bias_y, bias_z):
     data["MPU_CONFIG"]["bias_z"] = bias_z
 
     save_config()
+
 
 def change_accel_bias(bias_ax, bias_ay):
     """
