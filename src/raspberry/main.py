@@ -97,37 +97,47 @@ class SelfBalancingRobot:
     def _update_config(self, param, value):
         """Update robot configuration parameters."""
         param = param.upper()
+        print(f"DEBUG: Starting _update_config with param={param}, value={value}")
+        
         try:
             # Convert value to float explicitly
             value = float(value)
-
+            print(f"DEBUG: Converted value to float: {value}")
             print(f"Updating {param} to {value}")
 
+            success = False
             if param == "KP":
-                change_kp(value)
+                success = change_kp(value)
                 self.driver.balance_kp = value
             elif param == "KI":
-                change_ki(value)
+                success = change_ki(value)
                 self.driver.balance_ki = value
             elif param == "KD":
-                change_kd(value)
+                success = change_kd(value)
                 self.driver.balance_kd = value
             elif param == "SAMPLE":
-                change_sample_time(value)
+                success = change_sample_time(value)
                 self.driver.sample_time = value
             elif param == "MAXTILT":
-                change_max_safe_tilt(value)
+                success = change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value
             else:
                 print(f"Unknown parameter: {param}")
                 return
 
             # Add these debug prints to verify the update worked
-            print(f"✓ Updated {param} to {value}")
-            if self.ble.connected:
-                self.ble.send_telemetry(f"Config updated: {param}={value}")
+            if success:
+                print(f"✓ Updated {param} to {value}")
+                if self.ble.connected:
+                    self.ble.send_telemetry(f"Config updated: {param}={value}")
+            else:
+                print(f"✗ Failed to update {param}")
+                if self.ble.connected:
+                    self.ble.send_telemetry(f"Config update failed: {param}")
+                    
         except Exception as e:
             error_msg = f"Error updating config: {e}"
+            print(f"EXCEPTION in _update_config: {repr(e)}")
             print(error_msg)
             if self.ble.connected:
                 self.ble.send_telemetry(f"ERROR: {error_msg}")

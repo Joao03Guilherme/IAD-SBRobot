@@ -89,6 +89,8 @@ class BLEReceiver:
     def _irq_handler(self, event, data):
         """Handle BLE events"""
         # Connection event
+        print(f"BLE event received: {event}")  #  this to track all events
+
         if event == _IRQ_CENTRAL_CONNECT:
             self.conn_handle, _, _ = data
             self.connected = True
