@@ -10,12 +10,11 @@ import asyncio
 from controllers.motor_controller import MotorController
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
-import parameters.parameters as params
-import parameters.parameters_aux as p_aux
+from parameters.parameters import data, change_kd, change_ki, change_kp, change_sample_time, change_max_safe_tilt
 
 # Load constants
-MOTOR_CONFIG = params.MOTOR_CONFIG
-COMMANDS = params.COMMANDS
+MOTOR_CONFIG = data["MOTOR_CONFIG"]
+COMMANDS = data["COMMANDS"]
 
 # Status LED
 status_led = Pin("LED", Pin.OUT)
@@ -98,25 +97,26 @@ class SelfBalancingRobot:
             print(f"Updating {param} to {value}")
             
             if param == "KP":
-                p_aux.change_kp(value)
+                change_kp(value)
                 self.driver.balance_kp = value
             elif param == "KI":
-                p_aux.change_ki(value)
+                change_ki(value)
                 self.driver.balance_ki = value
             elif param == "KD":
-                p_aux.change_kd(value)
+                change_kd(value)
                 self.driver.balance_kd = value
             elif param == "SAMPLE":
-                p_aux.change_sample_time(value)
+                change_sample_time(value)
                 self.driver.sample_time = value
             elif param == "MAXTILT":
-                p_aux.change_max_safe_tilt(value)
+                change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value
             else:
                 print(f"Unknown parameter: {param}")
                 return
                 
             # Add these debug prints to verify the update worked
+            self.driver.update_parameters() # Update the parameters in the driver class
             print(f"✓ Updated {param} to {value}")
             if self.ble.connected:
                 self.ble.send_telemetry(f"Config updated: {param}={value}")

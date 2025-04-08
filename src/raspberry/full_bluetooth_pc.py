@@ -6,7 +6,7 @@ import parameters.parameters as params
 THIS CODE SHOULD BE RAN IN THE PC
 """
 
-COMMANDS = params.COMMANDS
+COMMANDS = params.data["COMMANDS"]
 
 
 async def interactive_mode(controller):

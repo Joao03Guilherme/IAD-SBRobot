@@ -4,10 +4,9 @@ import parameters.parameters as params
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from collections import deque
-import asyncio
 
 class BLEEmitter:
-    def __init__(self, device_address=None, device_name=params.PICO_NAME):
+    def __init__(self, device_address=params.data["PICO_ADDRESS"], device_name=params.data["PICO_NAME"]):
         self.device_address = device_address
         self.device_name = device_name
         self.client = None
@@ -44,7 +43,7 @@ class BLEEmitter:
 
                 # Subscribe to telemetry notifications
                 await self.client.start_notify(
-                    params.TELEMETRY_CHAR_UUID, self._on_telemetry
+                    params.data["TELEMETRY_CHAR_UUID"], self._on_telemetry
                 )
                 print("Subscribed to telemetry notifications")
                 self.start_angle_plot()
@@ -62,7 +61,7 @@ class BLEEmitter:
         if self.client and self.client.is_connected:
             # Unsubscribe from notifications
             try:
-                await self.client.stop_notify(params.TELEMETRY_CHAR_UUID)
+                await self.client.stop_notify(params.data["TELEMETRY_CHAR_UUID"])
             except:
                 pass
             # Disconnect
@@ -83,7 +82,7 @@ class BLEEmitter:
             else:
                 command_bytes = command
 
-            await self.client.write_gatt_char(params.CONTROL_CHAR_UUID, command_bytes)
+            await self.client.write_gatt_char(params.data["CONTROL_CHAR_UUID"], command_bytes)
             return True
         except Exception as e:
             print(f"Error sending command: {e}")

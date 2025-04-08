@@ -17,14 +17,11 @@ _IRQ_GATTS_WRITE = 3
 
 
 class BLEReceiver:
-    def __init__(self, name=params.PICO_NAME):
+    def __init__(self, name=params.data["PICO_NAME"]):
         """Initialize the BLE controller with device name"""
         self.name = name
-        print(f"Initializing BLE as '{name}'...")
         self.ble = bluetooth.BLE()
-        print("BLE instance created")
         self.ble.active(True)
-        print("BLE activated")
 
         # Connection status
         self.connected = False
@@ -34,29 +31,23 @@ class BLEReceiver:
         self.command_callback = None
 
         # Register services
-        print("Registering services...")
         self._register_services()
-        print("Services registered")
 
         # Register IRQ handler
         self.ble.irq(self._irq_handler)
-        print("IRQ handler registered")
 
         # Start advertising
         self._advertise()
-        print("Advertising started")
 
         print(f"BLE initialized as '{name}'")
 
     def _register_services(self):
         """Register BLE services and characteristics"""
         # Define UUIDs for service and characteristics
-        ROBOT_SERVICE_UUID = bluetooth.UUID(params.ROBOT_SERVICE_UUID)
-        CONTROL_CHAR_UUID = bluetooth.UUID(params.CONTROL_CHAR_UUID)
-        TELEMETRY_CHAR_UUID = bluetooth.UUID(params.TELEMETRY_CHAR_UUID)
+        ROBOT_SERVICE_UUID = bluetooth.UUID(params.data["ROBOT_SERVICE_UUID"])
+        CONTROL_CHAR_UUID = bluetooth.UUID(params.data["CONTROL_CHAR_UUID"])
+        TELEMETRY_CHAR_UUID = bluetooth.UUID(params.data["TELEMETRY_CHAR_UUID"])
 
-        # Define service with characteristics
-        # FLAG_READ=0x0002, FLAG_WRITE=0x0008, FLAG_NOTIFY=0x0010
         service = (
             ROBOT_SERVICE_UUID,
             (

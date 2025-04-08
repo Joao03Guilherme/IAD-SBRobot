@@ -22,7 +22,7 @@ class Driving:
         self.wheel_encoder = WheelEncoder()
 
         if motor_controller is None:
-            motor_config = params.MOTOR_CONFIG
+            motor_config = params.data["MOTOR_CONFIG"]
             # Pass as positional argument, not keyword argument
             self.motors = MotorController(motor_config)
         else:
@@ -30,11 +30,11 @@ class Driving:
 
         # Balance parameters
         self.balance_target = 0
-        self.balance_kp = params.PID_CONFIG["kp"]
-        self.balance_ki = params.PID_CONFIG["ki"]
-        self.balance_kd = params.PID_CONFIG["kd"]
-        self.sample_time = params.PID_CONFIG["sample_time"]
-        self.max_safe_tilt = params.PID_CONFIG["max_safe_tilt"]
+        self.balance_kp = params.data["PID_CONFIG"]["kp"]
+        self.balance_ki = params.data["PID_CONFIG"]["ki"]
+        self.balance_kd = params.data["PID_CONFIG"]["kd"]
+        self.sample_time = params.data["PID_CONFIG"]["sample_time"]
+        self.max_safe_tilt = params.data["PID_CONFIG"]["max_safe_tilt"]
 
         # Initialize PID state
         self.error_sum = 0
@@ -53,15 +53,29 @@ class Driving:
         self.direction = 0  # 0: stopped, 1: forward, -1: backward
 
         # Add acceleration control parameters (can be tuned with RL)
-        self.max_accel = params.PID_CONFIG[
+        self.max_accel = params.data["PID_CONFIG"][
             "max_acceleration"
         ]  # Maximum acceleration in units/second
-        self.accel_smoothing = params.PID_CONFIG[
+        self.accel_smoothing = params.data["PID_CONFIG"][
             "acceleration_smoothing"
         ]  # Smoothing factor for acceleration
         self.target_speed = 0  # Target speed to reach
         self.current_target = 0  # Current interpolated target speed
 
+    def update_parameters(self):
+        """TODO: THIS METHOD MIGHT BE USELESS"""
+        self.balance_kp = params.data["PID_CONFIG"]["kp"]
+        self.balance_ki = params.data["PID_CONFIG"]["ki"]
+        self.balance_kd = params.data["PID_CONFIG"]["kd"]
+        self.sample_time = params.data["PID_CONFIG"]["sample_time"]
+        self.max_safe_tilt = params.data["PID_CONFIG"]["max_safe_tilt"]
+        self.max_accel = params.data["PID_CONFIG"][
+            "max_acceleration"
+        ]  # Maximum acceleration in units/second
+        self.accel_smoothing = params.data["PID_CONFIG"][
+            "acceleration_smoothing"
+        ]  # Smoothing factor for acceleration
+        
     def set_balance_target(self, current_speed=0, target_speed=0):
         """Set the balance target angle based on current speed and target speed.
 
@@ -79,13 +93,13 @@ class Driving:
         target_speed are 0, the balance_target will be 0.
         """
         # Parameters for tuning via reinforcement learning
-        self.k_acc = params.PID_CONFIG[
+        self.k_acc = params.data["PID_CONFIG"][
             "k_acceleration"
         ]  # Coefficient for acceleration/deceleration response
-        self.k_torque_per_pw = params.PID_CONFIG[
+        self.k_torque_per_pw = params.data["PID_CONFIG"][
             "k_torque_per_pw"
         ]  # Models how torque requirements change with speed
-        self.drag = params.PID_CONFIG[
+        self.drag = params.data["PID_CONFIG"][
             "drag"
         ]  # Coefficient for overcoming friction/drag forces
 
@@ -108,7 +122,7 @@ class Driving:
         accel_angle_x, _ = self.mpu.calc_accel_angles()
 
         # Apply complementary filter to combine gyro and accelerometer data
-        alpha = params.PID_CONFIG["alpha"]
+        alpha = params.data["PID_CONFIG"]["alpha"]
         current_angle = alpha * gyro_angle_x + (1 - alpha) * accel_angle_x
 
         self.angle_data.append(current_angle)

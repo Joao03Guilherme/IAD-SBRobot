@@ -1,39 +1,38 @@
 import math
 import time
 from machine import I2C, Pin
-import parameters.parameters as params
-import parameters.parameters_aux as paux
+from parameters.parameters import data, change_gyro_bias
 
 
 class MPU6050:
     # MPU6050 I2C Address
-    MPU_ADDR = params.MPU_CONFIG["address"]
+    MPU_ADDR = data["MPU_CONFIG"]["address"]
 
     # Register addresses
-    ACCEL_XOUT_H = params.MPU_CONFIG["accel_xout_h"]
-    ACCEL_XOUT_L = params.MPU_CONFIG["accel_xout_l"]
-    ACCEL_YOUT_H = params.MPU_CONFIG["accel_yout_h"]
-    ACCEL_YOUT_L = params.MPU_CONFIG["accel_yout_l"]
-    ACCEL_ZOUT_H = params.MPU_CONFIG["accel_zout_h"]
-    ACCEL_ZOUT_L = params.MPU_CONFIG["accel_zout_l"]
+    ACCEL_XOUT_H = data["MPU_CONFIG"]["accel_xout_h"]
+    ACCEL_XOUT_L = data["MPU_CONFIG"]["accel_xout_l"]
+    ACCEL_YOUT_H = data["MPU_CONFIG"]["accel_yout_h"]
+    ACCEL_YOUT_L = data["MPU_CONFIG"]["accel_yout_l"]
+    ACCEL_ZOUT_H = data["MPU_CONFIG"]["accel_zout_h"]
+    ACCEL_ZOUT_L = data["MPU_CONFIG"]["accel_zout_l"]
 
-    GYRO_XOUT_H = params.MPU_CONFIG["gyro_xout_h"]
-    GYRO_XOUT_L = params.MPU_CONFIG["gyro_xout_l"]
-    GYRO_YOUT_H = params.MPU_CONFIG["gyro_yout_h"]
-    GYRO_YOUT_L = params.MPU_CONFIG["gyro_yout_l"]
-    GYRO_ZOUT_H = params.MPU_CONFIG["gyro_zout_h"]
-    GYRO_ZOUT_L = params.MPU_CONFIG["gyro_zout_l"]
+    GYRO_XOUT_H = data["MPU_CONFIG"]["gyro_xout_h"]
+    GYRO_XOUT_L = data["MPU_CONFIG"]["gyro_xout_l"]
+    GYRO_YOUT_H = data["MPU_CONFIG"]["gyro_yout_h"]
+    GYRO_YOUT_L = data["MPU_CONFIG"]["gyro_yout_l"]
+    GYRO_ZOUT_H = data["MPU_CONFIG"]["gyro_zout_h"]
+    GYRO_ZOUT_L = data["MPU_CONFIG"]["gyro_zout_l"]
 
     # Gyroscope bias
-    BIAS_X = params.MPU_CONFIG["bias_x"]
-    BIAS_Y = params.MPU_CONFIG["bias_y"]
-    BIAS_Z = params.MPU_CONFIG["bias_z"]
+    BIAS_X = data["MPU_CONFIG"]["bias_x"]
+    BIAS_Y = data["MPU_CONFIG"]["bias_y"]
+    BIAS_Z = data["MPU_CONFIG"]["bias_z"]
 
     # Default is ±250 deg/s range, which gives 131 LSB/(deg/s)
-    GYRO_SCALE_FACTOR = params.MPU_CONFIG["gyro_scale_factor"]
+    GYRO_SCALE_FACTOR = data["MPU_CONFIG"]["gyro_scale_factor"]
 
     # Time constant for complementary filter (in seconds)
-    FILTER_TIME_CONSTANT = params.MPU_CONFIG["filter_time_constant"]
+    FILTER_TIME_CONSTANT = data["MPU_CONFIG"]["filter_time_constant"]
 
     def __init__(self, sda_pin=26, scl_pin=27):
         # Initialize I2C with SDA and SCL pins
@@ -45,6 +44,13 @@ class MPU6050:
 
         # Initialization now explicitly named
         self.initialize_mpu()
+
+    def update_parameters(self):
+        self.BIAS_X = data["MPU_CONFIG"]["bias_x"]
+        self.BIAS_Y = data["MPU_CONFIG"]["bias_y"]
+        self.BIAS_Z = data["MPU_CONFIG"]["bias_z"]
+        self.GYRO_SCALE_FACTOR = data["MPU_CONFIG"]["gyro_scale_factor"]
+        self.FILTER_TIME_CONSTANT = data["MPU_CONFIG"]["filter_time_constant"]
 
     def initialize_mpu(self):
         # Wake up the MPU6050 (it is in sleep mode by default after power-up)
@@ -154,15 +160,15 @@ class MPU6050:
         print("Bias Y:", bias_y)
         print("Bias Z:", bias_z)
 
-        set_bias_x = params.MPU_CONFIG['bias_x'] + bias_x
-        set_bias_y = params.MPU_CONFIG['bias_y'] + bias_y
-        set_bias_z = params.MPU_CONFIG['bias_z'] + bias_z 
+        set_bias_x = self.BIAS_X + bias_x
+        set_bias_y = self.BIAS_Y + bias_y
+        set_bias_z = self.BIAS_Z + bias_z 
 
         self.BIAS_X = set_bias_x
         self.BIAS_Y = set_bias_y
         self.BIAS_Z = set_bias_z
 
-        paux.change_gyro_bias(set_bias_x, set_bias_y, set_bias_z)
+        change_gyro_bias(set_bias_x, set_bias_y, set_bias_z)
         print("Bias values updated in config.json")
 
         
