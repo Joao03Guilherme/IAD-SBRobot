@@ -17,6 +17,7 @@ from parameters.parameters import (
     change_kp,
     change_sample_time,
     change_max_safe_tilt,
+    change_alpha,
 )
 
 # Load constants
@@ -118,6 +119,9 @@ class SelfBalancingRobot:
             elif param == "SAMPLE":
                 success = change_sample_time(value)
                 self.driver.sample_time = value
+            elif param == "ALPHA":
+                success = change_alpha(value)
+                self.driver.alpha = value
             elif param == "MAXTILT":
                 success = change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value

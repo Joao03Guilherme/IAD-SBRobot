@@ -34,6 +34,8 @@ def change_kp(kp):
 
     save_config()
 
+    return True
+
 
 def change_ki(ki):
     """
@@ -49,6 +51,7 @@ def change_ki(ki):
     data["PID_CONFIG"]["ki"] = ki
 
     save_config()
+    return True
 
 
 def change_kd(kd):
@@ -65,6 +68,7 @@ def change_kd(kd):
     data["PID_CONFIG"]["kd"] = kd
 
     save_config()
+    return True
 
 
 def change_sample_time(sample_time):
@@ -81,6 +85,23 @@ def change_sample_time(sample_time):
     data["PID_CONFIG"]["sample_time"] = sample_time
 
     save_config()
+    return True
+
+def change_alpha(alpha):
+    """
+    Change the alpha value in the config.json file.
+    """
+
+    if not isinstance(alpha, float):
+        raise ValueError("alpha must be a float")
+
+    if alpha < 0:
+        raise ValueError("alpha must be greater than or equal to 0")
+
+    data["PID_CONFIG"]["alpha"] = alpha
+
+    save_config()
+    return True
 
 
 def change_max_safe_tilt(max_safe_tilt):
@@ -97,6 +118,7 @@ def change_max_safe_tilt(max_safe_tilt):
     data["MAX_SAFE_TILT"] = max_safe_tilt
 
     save_config()
+    return True
 
 
 def change_gyro_bias(bias_x, bias_y, bias_z):
