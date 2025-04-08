@@ -123,7 +123,6 @@ class SelfBalancingRobot:
                 return
 
             # Add these debug prints to verify the update worked
-            self.driver.update_parameters()  # Update the parameters in the driver class
             print(f"✓ Updated {param} to {value}")
             if self.ble.connected:
                 self.ble.send_telemetry(f"Config updated: {param}={value}")
@@ -266,6 +265,7 @@ class SelfBalancingRobot:
             elif action == "CALIBRATE":
                 print("Starting calibration...")
                 self.driver.mpu.calibrate_gyro()
+                self.driver.mpu.calibrate_accel()
                 return
 
             elif action == "STATUS":

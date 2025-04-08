@@ -1,7 +1,7 @@
 import math
 import time
 from machine import I2C, Pin
-from parameters.parameters import data, change_gyro_bias
+from parameters.parameters import data, change_gyro_bias, change_accel_bias
 
 
 class MPU6050:
@@ -23,6 +23,10 @@ class MPU6050:
     GYRO_ZOUT_H = data["MPU_CONFIG"]["gyro_zout_h"]
     GYRO_ZOUT_L = data["MPU_CONFIG"]["gyro_zout_l"]
 
+    # Accelerometer bias
+    BIAS_AX = data["MPU_CONFIG"]["bias_ax"]
+    BIAS_AY = data["MPU_CONFIG"]["bias_ay"]
+
     # Gyroscope bias
     BIAS_X = data["MPU_CONFIG"]["bias_x"]
     BIAS_Y = data["MPU_CONFIG"]["bias_y"]
@@ -32,7 +36,7 @@ class MPU6050:
     GYRO_SCALE_FACTOR = data["MPU_CONFIG"]["gyro_scale_factor"]
 
     # Time constant for complementary filter (in seconds)
-    FILTER_TIME_CONSTANT = data["MPU_CONFIG"]["filter_time_constant"]
+    alpha = data["MPU_CONFIG"]["alpha"]
 
     def __init__(self, sda_pin=26, scl_pin=27):
         # Initialize I2C with SDA and SCL pins
@@ -40,17 +44,12 @@ class MPU6050:
 
         # Initialize angle tracking values
         self.prev_time = 0
-        self.angle_x, self.angle_y, self.angle_z = 0, 0, 0
+        self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z = 0, 0, 0
+        self.angle_accel_x, self.angle_accel_y, self.angle_accel_z = 0, 0, 0
+        self.combined_angle_x, self.combined_angle_y = 0, 0 
 
         # Initialization now explicitly named
         self.initialize_mpu()
-
-    def update_parameters(self):
-        self.BIAS_X = data["MPU_CONFIG"]["bias_x"]
-        self.BIAS_Y = data["MPU_CONFIG"]["bias_y"]
-        self.BIAS_Z = data["MPU_CONFIG"]["bias_z"]
-        self.GYRO_SCALE_FACTOR = data["MPU_CONFIG"]["gyro_scale_factor"]
-        self.FILTER_TIME_CONSTANT = data["MPU_CONFIG"]["filter_time_constant"]
 
     def initialize_mpu(self):
         # Wake up the MPU6050 (it is in sleep mode by default after power-up)
@@ -127,26 +126,89 @@ class MPU6050:
         gyro_angle_x = gx_dps * dt
         gyro_angle_y = gy_dps * dt
         gyro_angle_z = gz_dps * dt
-        filter_coef = self.FILTER_TIME_CONSTANT / (self.FILTER_TIME_CONSTANT + dt)
 
-        # Update angles with the filtered values
-        self.angle_x = (
-            filter_coef * (self.angle_x + gyro_angle_x)
-            - (1 - filter_coef) * self.angle_x
+        self.angle_gyro_x += gyro_angle_x
+        self.angle_gyro_y += gyro_angle_y
+        self.angle_gyro_z += gyro_angle_z
+        return self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z
+    
+    def combined_angle(self):
+        # Get current time in milliseconds
+        curr_time = time.ticks_ms()
+
+        # Calculate time difference in seconds
+        if self.prev_time == 0:
+            dt = 0
+        else:
+            dt = time.ticks_diff(curr_time, self.prev_time) / 1000.0
+
+        self.prev_time = curr_time
+
+        # Skip integration on first call
+        if dt == 0:
+            return 0, 0
+
+        # Read gyroscope data (angular velocity)
+        gx, gy, gz = self.read_gyro()
+
+        # Convert raw gyro values to degrees per second
+        gx_dps = gx / self.GYRO_SCALE_FACTOR
+        gy_dps = gy / self.GYRO_SCALE_FACTOR
+        gz_dps = gz / self.GYRO_SCALE_FACTOR
+
+        # Calculate gyro angle change
+        gyro_angle_x = gx_dps * dt
+        gyro_angle_y = gy_dps * dt
+        gyro_angle_z = gz_dps * dt
+
+        # Read accelerometer angles
+        accel_angle_x, accel_angle_y = self.calc_accel_angles()
+        
+        self.angle_gyro_x += gyro_angle_x
+        self.angle_gyro_y += gyro_angle_y
+        self.angle_gyro_z += gyro_angle_z
+        
+        # Complementary filter to combine gyro and accelerometer angles
+        self.combined_angle_x = (
+            self.alpha * (self.angle_gyro_x) + (1 - self.alpha) * accel_angle_x
         )
-        self.angle_y = (
-            filter_coef * (self.angle_y + gyro_angle_y)
-            - (1 - filter_coef) * self.angle_y
-        )
-        self.angle_z = (
-            filter_coef * (self.angle_z + gyro_angle_z)
-            - (1 - filter_coef) * self.angle_z
+        self.combined_angle_y = (
+            self.alpha * (self.angle_gyro_y) + (1 - self.alpha) * accel_angle_y
         )
 
-        return self.angle_x, self.angle_y, self.angle_z
+        print(
+            f"Combined Angle X: {self.combined_angle_x}, Combined Angle Y: {self.combined_angle_y}"
+        )
+
+        return (
+            self.combined_angle_x,
+            self.combined_angle_y
+        )
+    
+    def calibrate_accel(self, num_samples=1000):
+        # Calibrate the accelerometer using 1000000 samples
+        bias_x, bias_y= 0, 0
+        for _ in range(num_samples):
+            ax, ay, az = self.read_accel()
+            bias_x += ax
+            bias_y += ay
+        bias_x /= num_samples
+        bias_y /= num_samples
+
+        print("Bias X:", bias_x)
+        print("Bias Y:", bias_y)
+
+        set_bias_ax = self.BIAS_AX + bias_x
+        set_bias_ay = self.BIAS_AY + bias_y
+
+        self.BIAS_AX = set_bias_ax
+        self.BIAS_AY = set_bias_ay
+
+        change_accel_bias(set_bias_ax, set_bias_ay)
+        print("Bias values updated in config.json")
 
     def calibrate_gyro(self, num_samples=1000):
-        # Calibrate the MPU6050 using 1000000 samples
+        # Calibrate the gyroscope using 1000000 samples
         bias_x, bias_y, bias_z = 0, 0, 0
         for _ in range(num_samples):
             gx, gy, gz = self.read_gyro()
@@ -156,6 +218,7 @@ class MPU6050:
         bias_x /= num_samples
         bias_y /= num_samples
         bias_z /= num_samples
+
         print("Bias X:", bias_x)
         print("Bias Y:", bias_y)
         print("Bias Z:", bias_z)

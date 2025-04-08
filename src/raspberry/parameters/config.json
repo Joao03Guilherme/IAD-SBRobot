@@ -6,7 +6,7 @@
     "IN4": 5,
     "ENA": 6,
     "ENB": 7,
-    "PWM_FREQ": 1000
+    "PWM_FREQ": 120
   },
   "MPU_CONFIG": {
     "i2c_id": 1,
@@ -25,24 +25,25 @@
     "gyro_yout_l": 70,
     "gyro_zout_h": 71,
     "gyro_zout_l": 72,
+    "bias_ax": -1064.831,
+    "bias_ay": 224.058,
     "bias_x": -1064.831,
     "bias_y": 224.058,
     "bias_z": -1357.831,
     "gyro_scale_factor": 131.0,
-    "filter_time_constant": 200
+    "alpha": 0.9
   },
   "PID_CONFIG": {
-    "sample_time": 0.0001,
-    "kp": 50,
-    "ki": 30,
-    "kd": 90,
+    "sample_time": 0.005,
+    "kp": 25,
+    "ki": 15,
+    "kd": 45,
     "max_safe_tilt": 100,
     "max_acceleration": 10,
     "acceleration_smoothing": 0.2,
     "k_acceleration": 2.0,
     "k_torque_per_pw": 0.5,
-    "drag": 1.0,
-    "alpha": 0.97
+    "drag": 1.0
   },
   "ENCODER_CONFIG": {
     "pin_a": 22,

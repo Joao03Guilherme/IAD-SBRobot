@@ -118,13 +118,9 @@ class Driving:
     def balance(self, current_speed=0, target_speed=0):
         """Balance the robot without moving (stationary balancing)."""
         # Get current angle using both gyro and accelerometer for better accuracy
-        gyro_angle_x, _, _ = self.mpu.angle_from_gyro()
-        accel_angle_x, _ = self.mpu.calc_accel_angles()
+        current_angle, _ = self.mpu.combined_angle()
 
-        # Apply complementary filter to combine gyro and accelerometer data
-        alpha = params.data["PID_CONFIG"]["alpha"]
-        current_angle = alpha * gyro_angle_x + (1 - alpha) * accel_angle_x
-
+        print(f"Current angle: {current_angle}°")
         self.angle_data.append(current_angle)
 
         # Calculate the error relative to the balance target
