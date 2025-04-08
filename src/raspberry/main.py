@@ -61,15 +61,12 @@ class SelfBalancingRobot:
         """Start the balancing loop."""
         self.running = True
         await asyncio.gather(self.main_loop(), self.ble_listener())
-
-    async def stop(self):
-        """Stop the robot."""
-        self.running = False
-        self.driver.stop()
+        
 
     async def reset(self):
         """Rest the Driving class."""
-        self.stop()
+        self.running = False
+        self.driver.stop()
         self.driver = Driving(self.motor_controller)
 
     def show_status(self):
@@ -217,7 +214,7 @@ class SelfBalancingRobot:
 
             elif action == "STOP":
                 print("Stopping robot...")
-                await self.stop()
+                await self.reset()
                 return
 
             elif action == "DRIVE":
@@ -281,11 +278,6 @@ class SelfBalancingRobot:
             elif action == "STATUS":
                 print("Showing status...")
                 self.show_status()
-                return
-
-            elif action == "RESET":
-                print("Resetting robot...")
-                await self.reset()
                 return
 
             else:
