@@ -85,10 +85,6 @@
     "8": {
       "action": "STATUS",
       "description": "Show current robot status"
-    },
-    "9": {
-      "action": "RESET",
-      "description": "Reset the robot"
     }
   },
   "ROBOT_SERVICE_UUID": "19B10000-E8F2-537E-4F6C-D104768A1214",
