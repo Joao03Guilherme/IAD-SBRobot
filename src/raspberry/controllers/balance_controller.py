@@ -19,7 +19,10 @@ class Driving:
         """Set up sensor and balance parameters."""
         # Initialize MPU and wheel encoder
         self.mpu = MPU6050()
-        self.wheel_encoder = WheelEncoder()
+        self.wheel_encoder_a = WheelEncoder(encoder_pin=params.data["ENCODER_CONFIG"]["pin_a"])
+        self.wheel_encoder_b = WheelEncoder(encoder_pin=params.data["ENCODER_CONFIG"]["pin_b"])
+        self.wheel_encoder_a.start()
+        self.wheel_encoder_b.start()
 
         if motor_controller is None:
             motor_config = params.data["MOTOR_CONFIG"]
@@ -114,6 +117,7 @@ class Driving:
         self.balance_target = max(
             -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_target)
         )
+        self.balance_target -= 0.1*(self.wheel_encoder_a.get_distance()+self.wheel_encoder_b.get_distance())/2  # Round to 2 decimal places
 
     def balance(self, current_speed=0, target_speed=0):
         """Balance the robot without moving (stationary balancing)."""
