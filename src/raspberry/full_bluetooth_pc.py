@@ -39,24 +39,27 @@ async def interactive_mode(controller):
         try:
             # Non-blocking get with a short timeout
             choice = input_queue.get(block=False)
-            
+            size = len(choice.split(" "))
+
+            if size == 3:
+                choice, arg1, arg2 = choice.split(" ")
+
             if choice.lower() == "q":
-                running = False
                 break
-                
-            if choice not in COMMANDS:
+
+            if choice.lower() not in COMMANDS:
                 print("Invalid command. Please try again.")
-                # Reprint the menu
-                print("\n=== PicoRobot Control Panel ===")
-                print("Available Commands:")
-                for cmd_num, cmd_info in COMMANDS.items():
-                    print(f"{cmd_num}: {cmd_info['action']} - {cmd_info['description']}")
-                print("q - Quit this program")
                 continue
+
+            # Send the command as-is (the robot will parse it)
+            if size == 3:
+                command = f"{choice} {arg1} {arg2}"
+            else:
+                command = choice
                 
             # Send the command
-            print(f"Sending command: {choice}")
-            await controller.send_command(choice)
+            print(f"Sending command: {command}")
+            await controller.send_command(command)
             
         except queue.Empty:
             # No input available, just continue the loop
