@@ -35,9 +35,9 @@
   },
   "PID_CONFIG": {
     "sample_time": 0.005,
-    "kp": 25,
-    "ki": 15,
-    "kd": 45,
+    "kp": 30,
+    "ki": 0,
+    "kd": 0,
     "max_safe_tilt": 100,
     "max_acceleration": 10,
     "acceleration_smoothing": 0.2,
