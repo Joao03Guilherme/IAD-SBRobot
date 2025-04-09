@@ -136,10 +136,10 @@ class BLEEmitter:
                     self.angle_buffer.append(angle)
 
                 if "B" in telemetry_dict:
-                    balance_target = float(telemetry_dict["B"])
+                    balance_angle = float(telemetry_dict["B"])
                     if self.verbose_telemetry:
-                        print(f"  Balance target: {balance_target}°")
-                    self.balance_angle_buffer.append(balance_target)
+                        print(f"  Balance target: {balance_angle}°")
+                    self.balance_angle_buffer.append(balance_angle)
 
                 if self.verbose_telemetry:
                     if "S" in telemetry_dict:
@@ -184,65 +184,40 @@ class BLEEmitter:
         self.ax.set_ylim(-50, 50)
         self.ax.set_xlim(0, 100)
         self.ax.grid(True)
-        self.ax.set_title("📈 Real-time Angle Plot")
+        self.ax.set_title("Real-time Angle Plot")  # Removed emoji to avoid font issues
         self.ax.set_xlabel("Time (ticks)")
         self.ax.set_ylabel("Angle (°)")
         self.ax.legend(loc='upper right')  # Add legend to identify lines
         self.fig.tight_layout()
         plt.show(block=False)
 
-        # Create empty data to initialize plot
-        x_data = list(range(100))
-        y_data = [0] * 100
-        self.line.set_data(x_data, y_data)
-        self.balance_line.set_data(x_data, y_data)
-
         # Update plot in a loop
         while self.plot_running:
             try:
-                # Update the data
-                if len(self.angle_buffer) > 0:
-                    # Convert deque to list with explicit typing to satisfy type checker
-                    buffer_list: List[float] = [x for x in self.angle_buffer]
-                    x_data = list(range(len(buffer_list)))
-                    
-                    # Update current angle line
-                    self.line.set_data(x_data, buffer_list)
-                    
-                    # Update balance target line if we have data
-                    if len(self.balance_angle_buffer) > 0:
-                        balance_buffer_list: List[float] = [x for x in self.balance_angle_buffer]
-                        # Ensure both lists are the same length for plotting
-                        min_len = min(len(buffer_list), len(balance_buffer_list))
-                        self.balance_line.set_data(x_data[:min_len], balance_buffer_list[:min_len])
+                # Update the data for the current angle line
+                if self.angle_buffer:
+                    y_data = [x for x in self.angle_buffer]
+                    x_data = list(range(len(y_data)))
+                    self.line.set_data(x_data, y_data)
 
-                    # Calculate combined min/max for y-axis scaling
-                    all_values = buffer_list[:]
-                    if len(self.balance_angle_buffer) > 0:
-                        all_values.extend([x for x in self.balance_angle_buffer])
-                    
-                    min_val = min(all_values) if all_values else -180
-                    max_val = max(all_values) if all_values else 180
-                    current_ymin, current_ymax = self.ax.get_ylim()
+                # Update the data for the balance angle line
+                if self.balance_angle_buffer:
+                    y_data = [x for x in self.balance_angle_buffer]
+                    x_data = list(range(len(y_data)))
+                    self.balance_line.set_data(x_data, y_data)
+                
+                # Dynamically adjust the x-axis if needed
+                max_len = max(len(self.angle_buffer), len(self.balance_angle_buffer), 100)
+                if max_len > self.ax.get_xlim()[1]:
+                    self.ax.set_xlim(0, max_len)
 
-                    # Only adjust y limits if needed
-                    if min_val < current_ymin or max_val > current_ymax:
-                        padding = (max_val - min_val) * 0.1 if max_val != min_val else 10
-                        new_min = min(min_val - padding, current_ymin)
-                        new_max = max(max_val + padding, current_ymax)
-                        self.ax.set_ylim(new_min, new_max)
-
-                    # Adjust x limit to show all data points
-                    if len(buffer_list) > self.ax.get_xlim()[1]:
-                        self.ax.set_xlim(0, len(buffer_list))
-
-                # Force redraw
-                self.fig.canvas.draw_idle()
+                # Redraw the plot
+                self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
-
-                # Sleep briefly to avoid hogging CPU
-                time.sleep(0.05)  # Update at 20fps
-
+            
             except Exception as e:
-                print(f"Plot update error: {e}")
-                time.sleep(0.5)  # If error occurs, wait before retrying
+                print(f"Plot error: {e}")
+                
+            # Sleep for a short duration to control update rate
+            time.sleep(0.1)
+        plt.close(self.fig)

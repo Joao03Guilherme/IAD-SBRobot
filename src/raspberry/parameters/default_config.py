@@ -52,6 +52,7 @@ PID_CONFIG = {
     "kp": 50,  # Proportional gain
     "ki": 30,  # Integral gain
     "kd": 90,  # Derivative gain
+    "balance2offset": 0.3,  # Offset for balance angle (in degrees)
     "max_safe_tilt": 100,  # Maximum safe tilt angle (in degrees)
     "max_acceleration": 10,  # Maximum acceleration in units/second
     "acceleration_smoothing": 0.2,  # Lower values = smoother acceleration (0-1)

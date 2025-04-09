@@ -38,6 +38,7 @@
     "kp": 30,
     "ki": 25,
     "kd": 5,
+    "balance2offset": 0.3,
     "max_safe_tilt": 100,
     "max_acceleration": 10,
     "acceleration_smoothing": 0.2,

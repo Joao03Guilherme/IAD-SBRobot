@@ -15,6 +15,7 @@ from parameters.parameters import (
     change_kd,
     change_ki,
     change_kp,
+    change_balance2offset,
     change_sample_time,
     change_max_safe_tilt,
     change_alpha,
@@ -69,6 +70,7 @@ class SelfBalancingRobot:
         self.driver.stop()
         self.driver = Driving(self.motor_controller)
 
+
     def show_status(self):
         """Show current robot status."""
         status = {
@@ -78,7 +80,7 @@ class SelfBalancingRobot:
             "angle": round(
                 self.driver.angle_data[-1] if self.driver.angle_data else 0, 2
             ),
-            "balance_target": self.driver.balance_target,
+            "balance_angle": self.driver.balance_angle,
             "max_safe_tilt": self.driver.max_safe_tilt,
         }
 
@@ -117,6 +119,8 @@ class SelfBalancingRobot:
                 self.driver.sample_time = value
             elif param == "ALPHA":
                 success = change_alpha(value)
+            elif param == "B2O":
+                success = change_balance2offset(value)
             elif param == "MAXTILT":
                 success = change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value
@@ -150,10 +154,14 @@ class SelfBalancingRobot:
         angle = 0
         if len(self.driver.angle_data) > 0:
             angle = self.driver.angle_data[-1]
+        
+        balance_angle = 0
+        if len(self.driver.balance_angle_data) > 0:
+            balance_angle = self.driver.balance_angle_data[-1]
 
         # Create telemetry string (simpler than JSON)
         telemetry = (
-            f"A:{angle:.2f},B{self.driver.balance_target:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
+            f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
         )
         if self.driver.left_power_data and self.driver.right_power_data:
             telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"
@@ -163,7 +171,7 @@ class SelfBalancingRobot:
 
     def find_balance_point(self):
         """Utility function to find the natural balance point of the robot.
-        This helps determine the optimal balance_target value."""
+        This helps determine the optimal balance_angle value."""
 
         print("Finding balance point. Place the robot upright and keep it still...")
 
@@ -229,7 +237,7 @@ class SelfBalancingRobot:
                         # Start the robot if it's not already running
                         if not self.running:
                             print("Auto-starting robot for drive command...")
-                            self.start()
+                            await self.start()
 
                         self.driver.forward(
                             target_speed=self.speed, turn_bias=self.turn
@@ -359,7 +367,7 @@ async def main():
     except KeyboardInterrupt:
         print("\nProgram terminated")
     finally:
-        await robot.stop()
+        await robot.reset()  # Ensure the robot stops
         # Cancel the BLE listener task
         ble_task.cancel()
         try:

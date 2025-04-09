@@ -38,7 +38,7 @@ class Driving:
             self.motors = motor_controller
 
         # Balance parameters
-        self.balance_target = 0
+        self.balance_angle = 0
         self.balance_kp = params.data["PID_CONFIG"]["kp"]
         self.balance_ki = params.data["PID_CONFIG"]["ki"]
         self.balance_kd = params.data["PID_CONFIG"]["kd"]
@@ -52,6 +52,7 @@ class Driving:
 
         # Data history (limited size to prevent memory issues on Pico)
         self.angle_data = deque([], 100)
+        self.balance_angle_data = deque([], 100)
         self.left_power_data = deque([], 100)
         self.right_power_data = deque([], 100)
 
@@ -85,7 +86,7 @@ class Driving:
             "acceleration_smoothing"
         ]  # Smoothing factor for acceleration
 
-    def set_balance_target(self, current_speed=0, target_speed=0):
+    def set_balance_angle(self, current_speed=0.0, target_speed=0.0):
         """Set the balance target angle based on current speed and target speed.
 
         Args:
@@ -99,7 +100,7 @@ class Driving:
         3. A drag/friction component proportional to target speed
 
         The equation satisfies the constraint that when both current_speed and
-        target_speed are 0, the balance_target will be 0.
+        target_speed are 0, the balance_angle will be 0.
         """
         # Parameters for tuning via reinforcement learning
         self.k_acc = params.data["PID_CONFIG"][
@@ -115,34 +116,34 @@ class Driving:
         # Calculate balance target:
         # - First term: Non-linear acceleration component that increases with speed
         # - Second term: Compensates for friction/drag forces
-        self.balance_target = (
+        self.balance_angle = (
             1 + (self.k_torque_per_pw * current_speed) ** 2
         ) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
 
         # Add a component of stay still
-        self.balance_target += (
-            0.033
+        self.balance_angle += (
+            params.data["PID_CONFIG"]["balance2offset"]
             * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count)
             / 2
         )  # Round to 2 decimal places
         # Constrain the balance target to safe limits
-        self.balance_target = max(
-            -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_target)
+        self.balance_angle = max(
+            -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_angle)
         )
 
-    def balance(self, current_speed=0, target_speed=0):
+    def balance(self, current_speed=0.0, target_speed=0.0):
         """Balance the robot without moving (stationary balancing)."""
         # Get current angle using both gyro and accelerometer for better accuracy
         current_angle, _ = self.mpu.combined_angle()
 
-        print(f"Current angle: {current_angle}°")
-        self.angle_data.append(current_angle)
-
         # Calculate the error relative to the balance target
-        self.set_balance_target(current_speed, target_speed)
-        error = self.balance_target - current_angle
+        self.set_balance_angle(current_speed, target_speed)
+        error = self.balance_angle - current_angle
 
-        print("Target Angle:", self.balance_target)
+        self.angle_data.append(current_angle)
+        self.balance_angle_data.append(self.balance_angle)
+
+        print("Target Angle:", self.balance_angle)
         print("Current Angle:", current_angle)
 
         # Calculate time difference
@@ -254,7 +255,7 @@ class Driving:
         self.time_data.append(current_time)
 
         # Calculate speed and acceleration
-        current_speed = self.wheel_encoder.get_speed(self.direction)
+        current_speed = self.wheel_encoder.get_speed()
         self.speed_data.append(current_speed)
 
         # Get acceleration if we have enough data points

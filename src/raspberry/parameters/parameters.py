@@ -70,6 +70,18 @@ def change_kd(kd):
     save_config()
     return True
 
+def change_balance2offset(balance2offset):
+    """
+    Change the balance2offset value in the config.json file.
+    """
+
+    if not isinstance(balance2offset, float):
+        raise ValueError("balance2offset must be a float")
+
+    data["PID_CONFIG"]["balance2offset"] = balance2offset
+
+    save_config()
+    return True
 
 def change_sample_time(sample_time):
     """

@@ -57,7 +57,7 @@ class WheelEncoder:
             ):
                 # Get current RPM
                 count = self.pulse_count - self.last_pulse_count
-                self.pulse_count = slef.last_pulse_count
+                self.last_pulse_count = self.pulse_count
 
                 # Calculate instant RPM
                 elapsed_ms = time.ticks_diff(current_time, self.last_measurement_time)
@@ -81,11 +81,21 @@ class WheelEncoder:
 
     def start(self):
         """Start the background measurement task."""
+        # reinitialize the encoder and reset values
+        self.initialize_encoder()
+        self.reset()
         asyncio.create_task(self.run_background_measurement())
 
     def stop(self):
         """Stop the background measurement task."""
         self.is_running = False
+
+    def reset(self):
+        """Reset the encoder count."""
+        self.pulse_count = 0
+        self.last_pulse_count = 0
+        self.motor_direction = 0
+        self.rpm_buffer = [0] * params.data["ENCODER_CONFIG"]["buffer_size"]
 
     def get_rpm(self):
         """Returns the latest RPM value from the buffer."""
