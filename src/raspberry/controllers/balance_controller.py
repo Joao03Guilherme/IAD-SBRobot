@@ -19,12 +19,16 @@ class Driving:
         """Set up sensor and balance parameters."""
         # Initialize MPU and wheel encoder
         self.mpu = MPU6050()
-        self.wheel_encoder_a = WheelEncoder(encoder_pin=params.data["ENCODER_CONFIG"]["pin_a"])
-        self.wheel_encoder_b = WheelEncoder(encoder_pin=params.data["ENCODER_CONFIG"]["pin_b"])
+        self.wheel_encoder_a = WheelEncoder(
+            encoder_pin=params.data["ENCODER_CONFIG"]["pin_a"]
+        )
+        self.wheel_encoder_b = WheelEncoder(
+            encoder_pin=params.data["ENCODER_CONFIG"]["pin_b"]
+        )
         self.wheel_encoder_a.start()
         self.wheel_encoder_b.start()
 
-        self.wheel_encoder = self.wheel_encoder_a 
+        self.wheel_encoder = self.wheel_encoder_a
 
         if motor_controller is None:
             motor_config = params.data["MOTOR_CONFIG"]
@@ -116,7 +120,11 @@ class Driving:
         ) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
 
         # Add a component of stay still
-        self.balance_target += 0.033*(self.wheel_encoder_a.pulse_count+self.wheel_encoder_b.pulse_count)/2  # Round to 2 decimal places
+        self.balance_target += (
+            0.033
+            * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count)
+            / 2
+        )  # Round to 2 decimal places
         # Constrain the balance target to safe limits
         self.balance_target = max(
             -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_target)

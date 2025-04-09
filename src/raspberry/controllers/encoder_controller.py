@@ -56,7 +56,7 @@ class WheelEncoder:
                 >= self.measurement_interval_ms
             ):
                 # Get current RPM
-                count = self.pulse_count-self.last_pulse_count
+                count = self.pulse_count - self.last_pulse_count
                 self.pulse_count = slef.last_pulse_count
 
                 # Calculate instant RPM

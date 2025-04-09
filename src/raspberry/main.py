@@ -153,7 +153,7 @@ class SelfBalancingRobot:
 
         # Create telemetry string (simpler than JSON)
         telemetry = (
-            f"A:{angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
+            f"A:{angle:.2f},B{self.driver.balance_target:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
         )
         if self.driver.left_power_data and self.driver.right_power_data:
             telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"

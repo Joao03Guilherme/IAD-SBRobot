@@ -26,6 +26,7 @@ class BLEEmitter:
         self.verbose_telemetry = verbose_telemetry
         # For plotting angle - add type hint to fix the issue
         self.angle_buffer: Deque[float] = deque(maxlen=100)
+        self.balance_angle_buffer: Deque[float] = deque(maxlen=100)
         self.plot_initialized = False
 
     async def connect(self):
@@ -134,6 +135,12 @@ class BLEEmitter:
                         print(f"  Angle: {angle}°")
                     self.angle_buffer.append(angle)
 
+                if "B" in telemetry_dict:
+                    balance_target = float(telemetry_dict["B"])
+                    if self.verbose_telemetry:
+                        print(f"  Balance target: {balance_target}°")
+                    self.balance_angle_buffer.append(balance_target)
+
                 if self.verbose_telemetry:
                     if "S" in telemetry_dict:
                         print(f"  Speed: {telemetry_dict['S']}")
@@ -169,13 +176,18 @@ class BLEEmitter:
         """Run the plot in a separate thread."""
         plt.ion()  # Enable interactive mode
         self.fig, self.ax = plt.subplots(figsize=(8, 5))
-        (self.line,) = self.ax.plot([], [], lw=2, color="blue")
-        self.ax.set_ylim(-50, 50)  # Assuming angles range from -180° to 180°
+        
+        # Create two line objects instead of one
+        self.line, = self.ax.plot([], [], lw=2, color='blue', label='Current Angle')
+        self.balance_line, = self.ax.plot([], [], lw=2, color='red', label='Target Angle')
+        
+        self.ax.set_ylim(-50, 50)
         self.ax.set_xlim(0, 100)
         self.ax.grid(True)
         self.ax.set_title("📈 Real-time Angle Plot")
         self.ax.set_xlabel("Time (ticks)")
         self.ax.set_ylabel("Angle (°)")
+        self.ax.legend(loc='upper right')  # Add legend to identify lines
         self.fig.tight_layout()
         plt.show(block=False)
 
@@ -183,6 +195,7 @@ class BLEEmitter:
         x_data = list(range(100))
         y_data = [0] * 100
         self.line.set_data(x_data, y_data)
+        self.balance_line.set_data(x_data, y_data)
 
         # Update plot in a loop
         while self.plot_running:
@@ -192,18 +205,29 @@ class BLEEmitter:
                     # Convert deque to list with explicit typing to satisfy type checker
                     buffer_list: List[float] = [x for x in self.angle_buffer]
                     x_data = list(range(len(buffer_list)))
+                    
+                    # Update current angle line
                     self.line.set_data(x_data, buffer_list)
+                    
+                    # Update balance target line if we have data
+                    if len(self.balance_angle_buffer) > 0:
+                        balance_buffer_list: List[float] = [x for x in self.balance_angle_buffer]
+                        # Ensure both lists are the same length for plotting
+                        min_len = min(len(buffer_list), len(balance_buffer_list))
+                        self.balance_line.set_data(x_data[:min_len], balance_buffer_list[:min_len])
 
-                    # Only adjust y limits if needed (avoid constant rescaling)
-                    min_val = min(buffer_list) if buffer_list else -180
-                    max_val = max(buffer_list) if buffer_list else 180
+                    # Calculate combined min/max for y-axis scaling
+                    all_values = buffer_list[:]
+                    if len(self.balance_angle_buffer) > 0:
+                        all_values.extend([x for x in self.balance_angle_buffer])
+                    
+                    min_val = min(all_values) if all_values else -180
+                    max_val = max(all_values) if all_values else 180
                     current_ymin, current_ymax = self.ax.get_ylim()
 
+                    # Only adjust y limits if needed
                     if min_val < current_ymin or max_val > current_ymax:
-                        # Add some padding to limits
-                        padding = (
-                            (max_val - min_val) * 0.1 if max_val != min_val else 10
-                        )
+                        padding = (max_val - min_val) * 0.1 if max_val != min_val else 10
                         new_min = min(min_val - padding, current_ymin)
                         new_max = max(max_val + padding, current_ymax)
                         self.ax.set_ylim(new_min, new_max)
@@ -217,8 +241,8 @@ class BLEEmitter:
                 self.fig.canvas.flush_events()
 
                 # Sleep briefly to avoid hogging CPU
-                time.sleep(0.05)  # Update at 20fps for smoother animation
+                time.sleep(0.05)  # Update at 20fps
 
             except Exception as e:
                 print(f"Plot update error: {e}")
-                time.sleep(0.5)  # If error occurs, wait a bit before retrying
+                time.sleep(0.5)  # If error occurs, wait before retrying
