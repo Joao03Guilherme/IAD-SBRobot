@@ -3,6 +3,7 @@ from bluethooth.BLEEmitter import BLEEmitter
 import parameters.parameters as params
 import threading
 import queue
+import time
 
 """
 THIS CODE SHOULD BE RAN IN THE PC
@@ -15,8 +16,12 @@ input_queue = queue.Queue()
 def get_user_input():
     """Function to run in a separate thread to get user input"""
     while True:
+        print("=" * 100)
         user_input = input("\nEnter command: ")
         input_queue.put(user_input)
+        # Wait a bit before checking for new input
+        time.sleep(0.1)
+
         if user_input.lower() == "q":
             break
 
@@ -59,8 +64,6 @@ async def interactive_mode(controller):
             else:
                 command = choice
 
-            # Send the command
-            print(f"Sending command: {command}")
             await controller.send_command(command)
 
         except queue.Empty:

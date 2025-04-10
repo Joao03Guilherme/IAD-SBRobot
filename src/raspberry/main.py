@@ -72,7 +72,6 @@ class SelfBalancingRobot:
         self.driver = Driving(self.motor_controller)
 
         self.ble.send_telemetry(",M:Robot stopped and reset")
-        self.ble.send_telemetry(",M:config.json file: ")
         self.ble.send_telemetry(f",C{str(data['PID_CONFIG'])}")
 
     def _update_config(self, param, value):

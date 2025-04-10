@@ -79,7 +79,6 @@ class BLEEmitter:
             return False
 
         try:
-            print(f"Sending command: {command}")
             await self.client.write_gatt_char(CONTROL_CHAR_UUID, command.encode())
             return True
         except Exception as e:

@@ -92,7 +92,6 @@ class BLEEmitter:
             return False
 
         try:
-            print(f"Sending command: {command}")
             # Handle command whether it's a string or bytes
             if isinstance(command, str):
                 command_bytes = command.encode()
@@ -115,8 +114,8 @@ class BLEEmitter:
             if self.verbose_telemetry:
                 print(f"Telemetry: {decoded}")
 
-            if "C" in decoded:
-                print(f"Config file: {decoded}")
+            if ",C" in decoded:
+                print(f"\nCurrent config file: {decoded[2:]}")
                 return
 
             # Parse the formatted string into a dictionary
@@ -135,7 +134,7 @@ class BLEEmitter:
                 if "M" in telemetry_dict:
                     # Messages
                     message = telemetry_dict["M"]
-                    print(f"Message: {message}")
+                    print(f"\nMessage: {message}")
 
                 if "A" in telemetry_dict:
                     angle = float(telemetry_dict["A"])
