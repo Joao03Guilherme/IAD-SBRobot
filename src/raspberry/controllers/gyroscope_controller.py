@@ -182,8 +182,8 @@ class MPU6050:
 
         return (self.combined_angle_x, self.combined_angle_y)
 
-    def calibrate_accel(self, num_samples=10000):
-        # Calibrate the accelerometer using 1000000 samples
+    def calibrate_accel(self, num_samples=5000):
+        # Calibrate the accelerometer using some samples
         bias_x, bias_y = 0, 0
         for _ in range(num_samples):
             ax, ay, az = self.read_accel()
@@ -204,8 +204,8 @@ class MPU6050:
         change_accel_bias(set_bias_ax, set_bias_ay)
         print("Bias values updated in config.json")
 
-    def calibrate_gyro(self, num_samples=10000):
-        # Calibrate the gyroscope using 1000000 samples
+    def calibrate_gyro(self, num_samples=5000):
+        # Calibrate the gyroscope using some samples
         bias_x, bias_y, bias_z = 0, 0, 0
         for _ in range(num_samples):
             gx, gy, gz = self.read_gyro()

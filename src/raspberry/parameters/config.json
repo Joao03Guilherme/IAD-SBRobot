@@ -31,13 +31,14 @@
     "bias_y": 224.058,
     "bias_z": -1357.831,
     "gyro_scale_factor": 131.0,
-    "alpha": 0.9
+    "alpha": 0.95,
+    "calibration_samples": 1000
   },
   "PID_CONFIG": {
     "sample_time": 0.005,
     "kp": 30,
-    "ki": 25,
-    "kd": 5,
+    "ki": 3,
+    "kd": 3,
     "balance2offset": 0.3,
     "max_safe_tilt": 100,
     "max_acceleration": 10,
@@ -67,10 +68,6 @@
       "action": "DRIVE",
       "description": "Drive with speed & turn (e.g., 3 20 5)"
     },
-    "4": {
-      "action": "TURN",
-      "description": "Turn by angle (e.g., 4 90 1)"
-    },
     "5": {
       "action": "CONFIG",
       "description": "Update configuration"
@@ -78,14 +75,6 @@
     "6": {
       "action": "CALIBRATE",
       "description": "Start calibration procedure"
-    },
-    "7": {
-      "action": "HELP",
-      "description": "Show this help"
-    },
-    "8": {
-      "action": "STATUS",
-      "description": "Show current robot status"
     }
   },
   "ROBOT_SERVICE_UUID": "19B10000-E8F2-537E-4F6C-D104768A1214",

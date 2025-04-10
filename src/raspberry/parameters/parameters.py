@@ -70,6 +70,7 @@ def change_kd(kd):
     save_config()
     return True
 
+
 def change_balance2offset(balance2offset):
     """
     Change the balance2offset value in the config.json file.
@@ -82,6 +83,7 @@ def change_balance2offset(balance2offset):
 
     save_config()
     return True
+
 
 def change_sample_time(sample_time):
     """

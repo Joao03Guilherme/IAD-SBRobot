@@ -28,8 +28,6 @@ class Driving:
         self.wheel_encoder_a.start()
         self.wheel_encoder_b.start()
 
-        self.wheel_encoder = self.wheel_encoder_a
-
         if motor_controller is None:
             motor_config = params.data["MOTOR_CONFIG"]
             # Pass as positional argument, not keyword argument
@@ -53,6 +51,7 @@ class Driving:
         # Data history (limited size to prevent memory issues on Pico)
         self.angle_data = deque([], 100)
         self.balance_angle_data = deque([], 100)
+        self.acceleration_data = deque([], 100)
         self.left_power_data = deque([], 100)
         self.right_power_data = deque([], 100)
 
@@ -71,20 +70,6 @@ class Driving:
         ]  # Smoothing factor for acceleration
         self.target_speed = 0  # Target speed to reach
         self.current_target = 0  # Current interpolated target speed
-
-    def update_parameters(self):
-        """TODO: THIS METHOD MIGHT BE USELESS"""
-        self.balance_kp = params.data["PID_CONFIG"]["kp"]
-        self.balance_ki = params.data["PID_CONFIG"]["ki"]
-        self.balance_kd = params.data["PID_CONFIG"]["kd"]
-        self.sample_time = params.data["PID_CONFIG"]["sample_time"]
-        self.max_safe_tilt = params.data["PID_CONFIG"]["max_safe_tilt"]
-        self.max_accel = params.data["PID_CONFIG"][
-            "max_acceleration"
-        ]  # Maximum acceleration in units/second
-        self.accel_smoothing = params.data["PID_CONFIG"][
-            "acceleration_smoothing"
-        ]  # Smoothing factor for acceleration
 
     def set_balance_angle(self, current_speed=0.0, target_speed=0.0):
         """Set the balance target angle based on current speed and target speed.
@@ -188,7 +173,9 @@ class Driving:
         Returns:
             (current_angle, left_power, right_power, current_speed, current_acceleration)
         """
-        current_speed = self.wheel_encoder.get_speed()
+        current_speed = (
+            self.wheel_encoder_a.get_speed() + self.wheel_encoder_b.get_speed()
+        ) / 2
 
         # Use the balance method with smoothed target speed
         current_angle, driving_power = self.balance(
@@ -249,25 +236,30 @@ class Driving:
         self.right_power_data.append(right_power)
 
         # Track speed and acceleration
-        current_rpm = self.wheel_encoder.get_rpm()
+        current_rpm = (
+            self.wheel_encoder_a.get_rpm() + self.wheel_encoder_b.get_rpm()
+        ) / 2
         current_time = time.ticks_ms()
         self.rpm_data.append(current_rpm)
         self.time_data.append(current_time)
 
         # Calculate speed and acceleration
-        current_speed = self.wheel_encoder.get_speed()
+        current_speed = (
+            self.wheel_encoder_a.get_speed() + self.wheel_encoder_b.get_speed()
+        ) / 2
         self.speed_data.append(current_speed)
 
         # Get acceleration if we have enough data points
         if len(self.rpm_data) >= 3 and len(self.time_data) >= 3:
-            current_acceleration = self.wheel_encoder.get_absolute_acceleration()
+            current_acceleration = (
+                self.wheel_encoder_a.get_absolute_acceleration()
+                + self.wheel_encoder_b.get_absolute_acceleration()
+            ) / 2
         else:
             current_acceleration = 0
 
         # Store the acceleration value for RL feedback
-        if not hasattr(self, "acceleration_history"):
-            self.acceleration_history = deque([], 20)
-        self.acceleration_history.append(current_acceleration)
+        self.acceleration_data.append(current_acceleration)
 
         return (
             current_angle,

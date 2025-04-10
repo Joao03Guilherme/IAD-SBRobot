@@ -68,30 +68,12 @@ class SelfBalancingRobot:
         """Rest the Driving class."""
         self.running = False
         self.driver.stop()
+        self.motor_controller = MotorController(MOTOR_CONFIG)
         self.driver = Driving(self.motor_controller)
 
-
-    def show_status(self):
-        """Show current robot status."""
-        status = {
-            "running": self.running,
-            "speed": self.speed,
-            "turn": self.turn,
-            "angle": round(
-                self.driver.angle_data[-1] if self.driver.angle_data else 0, 2
-            ),
-            "balance_angle": self.driver.balance_angle,
-            "max_safe_tilt": self.driver.max_safe_tilt,
-        }
-
-        status_text = "Robot Status:\n"
-        for key, value in status.items():
-            status_text += f"{key}: {value}\n"
-
-        print(status_text)
-        if self.ble.connected:
-            # Use send_telemetry instead of send_message
-            self.ble.send_telemetry(status_text)
+        self.ble.send_telemetry(",M:Robot stopped and reset")
+        self.ble.send_telemetry(",M:config.json file: ")
+        self.ble.send_telemetry(f",C{str(data['PID_CONFIG'])}")
 
     def _update_config(self, param, value):
         """Update robot configuration parameters."""
@@ -130,20 +112,20 @@ class SelfBalancingRobot:
 
             # Add these debug prints to verify the update worked
             if success:
-                print(f"✓ Updated {param} to {value}")
+                print(f"Updated {param} to {value}")
                 if self.ble.connected:
-                    self.ble.send_telemetry(f"Config updated: {param}={value}")
+                    self.ble.send_telemetry(f",M:Config updated: {param}={value}")
             else:
-                print(f"✗ Failed to update {param}")
+                print(f"Failed to update {param}")
                 if self.ble.connected:
-                    self.ble.send_telemetry(f"Config update failed: {param}")
+                    self.ble.send_telemetry(f",M:Config update failed: {param}")
 
         except Exception as e:
             error_msg = f"Error updating config: {e}"
             print(f"EXCEPTION in _update_config: {repr(e)}")
             print(error_msg)
             if self.ble.connected:
-                self.ble.send_telemetry(f"ERROR: {error_msg}")
+                self.ble.send_telemetry(f",M:ERROR: {error_msg}")
 
     def send_telemetry(self):
         """Send robot telemetry data via BLE."""
@@ -154,15 +136,13 @@ class SelfBalancingRobot:
         angle = 0
         if len(self.driver.angle_data) > 0:
             angle = self.driver.angle_data[-1]
-        
+
         balance_angle = 0
         if len(self.driver.balance_angle_data) > 0:
             balance_angle = self.driver.balance_angle_data[-1]
 
         # Create telemetry string (simpler than JSON)
-        telemetry = (
-            f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
-        )
+        telemetry = f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
         if self.driver.left_power_data and self.driver.right_power_data:
             telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"
 
@@ -210,7 +190,7 @@ class SelfBalancingRobot:
             return
 
         # Handle numeric commands (like "1" or "2")
-        parts = cmd.split()
+        parts = cmd.split(" ")
         cmd_num = parts[0]
 
         if cmd_num in COMMANDS:
@@ -251,21 +231,6 @@ class SelfBalancingRobot:
                     print("Usage: 3 <speed> [turn]")
                 return
 
-            elif action == "TURN":
-                if len(parts) >= 3:
-                    try:
-                        angle = int(parts[1])
-                        direction = int(parts[2])
-                        print(f"Turning {angle} degrees in direction {direction}")
-                        self.driver.turn(angle, direction)
-                        return
-                    except ValueError:
-                        print("Invalid angle or direction value")
-                else:
-                    print("Error: TURN command requires angle and direction parameters")
-                    print("Usage: 4 <angle> <direction>")
-                return
-
             elif action == "CONFIG":
                 print("Configuring robot...")
                 if len(parts) == 3:
@@ -284,13 +249,14 @@ class SelfBalancingRobot:
 
             elif action == "CALIBRATE":
                 print("Starting calibration...")
-                self.driver.mpu.calibrate_gyro()
-                self.driver.mpu.calibrate_accel()
-                return
-
-            elif action == "STATUS":
-                print("Showing status...")
-                self.show_status()
+                self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
+                num_samples = data["MPU_CONFIG"]["calibration_samples"]
+                self.driver.mpu.calibrate_gyro(num_samples=num_samples)
+                self.driver.mpu.calibrate_accel(num_samples=num_samples)
+                self.ble.send_telemetry(
+                    f",M:Calibrated the gyro and accelerometer with {num_samples} samples!"
+                )
+                print("Calibration complete")
                 return
 
             else:

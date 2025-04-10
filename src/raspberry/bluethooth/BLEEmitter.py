@@ -10,7 +10,7 @@ from matplotlib.animation import FuncAnimation
 from collections import deque
 import threading
 import time
-from typing import Deque, List
+from typing import Deque
 
 
 class BLEEmitter:
@@ -24,7 +24,6 @@ class BLEEmitter:
         self.device_name = device_name
         self.client = None
         self.verbose_telemetry = verbose_telemetry
-        # For plotting angle - add type hint to fix the issue
         self.angle_buffer: Deque[float] = deque(maxlen=100)
         self.balance_angle_buffer: Deque[float] = deque(maxlen=100)
         self.plot_initialized = False
@@ -114,7 +113,11 @@ class BLEEmitter:
             # Decode the data as a formatted string
             decoded = data.decode()
             if self.verbose_telemetry:
-                print(f"📊 Telemetry: {decoded}")
+                print(f"Telemetry: {decoded}")
+
+            if "C" in decoded:
+                print(f"Config file: {decoded}")
+                return
 
             # Parse the formatted string into a dictionary
             if "," in decoded:
@@ -128,6 +131,11 @@ class BLEEmitter:
                 # Print in a more readable format
                 if self.verbose_telemetry:
                     print("Parsed telemetry data:")
+
+                if "M" in telemetry_dict:
+                    # Messages
+                    message = telemetry_dict["M"]
+                    print(f"Message: {message}")
 
                 if "A" in telemetry_dict:
                     angle = float(telemetry_dict["A"])
@@ -176,18 +184,20 @@ class BLEEmitter:
         """Run the plot in a separate thread."""
         plt.ion()  # Enable interactive mode
         self.fig, self.ax = plt.subplots(figsize=(8, 5))
-        
+
         # Create two line objects instead of one
-        self.line, = self.ax.plot([], [], lw=2, color='blue', label='Current Angle')
-        self.balance_line, = self.ax.plot([], [], lw=2, color='red', label='Target Angle')
-        
+        (self.line,) = self.ax.plot([], [], lw=2, color="blue", label="Current Angle")
+        (self.balance_line,) = self.ax.plot(
+            [], [], lw=2, color="red", label="Target Angle"
+        )
+
         self.ax.set_ylim(-50, 50)
         self.ax.set_xlim(0, 100)
         self.ax.grid(True)
         self.ax.set_title("Real-time Angle Plot")  # Removed emoji to avoid font issues
         self.ax.set_xlabel("Time (ticks)")
         self.ax.set_ylabel("Angle (°)")
-        self.ax.legend(loc='upper right')  # Add legend to identify lines
+        self.ax.legend(loc="upper right")  # Add legend to identify lines
         self.fig.tight_layout()
         plt.show(block=False)
 
@@ -205,19 +215,21 @@ class BLEEmitter:
                     y_data = [x for x in self.balance_angle_buffer]
                     x_data = list(range(len(y_data)))
                     self.balance_line.set_data(x_data, y_data)
-                
+
                 # Dynamically adjust the x-axis if needed
-                max_len = max(len(self.angle_buffer), len(self.balance_angle_buffer), 100)
+                max_len = max(
+                    len(self.angle_buffer), len(self.balance_angle_buffer), 100
+                )
                 if max_len > self.ax.get_xlim()[1]:
                     self.ax.set_xlim(0, max_len)
 
                 # Redraw the plot
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
-            
+
             except Exception as e:
                 print(f"Plot error: {e}")
-                
+
             # Sleep for a short duration to control update rate
             time.sleep(0.1)
         plt.close(self.fig)
