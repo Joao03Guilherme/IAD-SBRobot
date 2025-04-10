@@ -136,28 +136,28 @@ def change_max_safe_tilt(max_safe_tilt):
     return True
 
 
-def change_gyro_bias(bias_x, bias_y, bias_z):
+def change_gyro_bias(bias_gx, bias_gy, bias_gz):
     """
     Change the gyro bias values in the config.json file.
     """
 
-    if not isinstance(bias_x, float):
+    if not isinstance(bias_gx, float):
         raise ValueError("bias_x must be a float")
 
-    if not isinstance(bias_y, float):
+    if not isinstance(bias_gy, float):
         raise ValueError("bias_y must be a float")
 
-    if not isinstance(bias_z, float):
+    if not isinstance(bias_gz, float):
         raise ValueError("bias_z must be a float")
 
-    data["MPU_CONFIG"]["bias_x"] = bias_x
-    data["MPU_CONFIG"]["bias_y"] = bias_y
-    data["MPU_CONFIG"]["bias_z"] = bias_z
+    data["MPU_CONFIG"]["bias_gx"] = bias_gx
+    data["MPU_CONFIG"]["bias_gy"] = bias_gy
+    data["MPU_CONFIG"]["bias_gz"] = bias_gz
 
     save_config()
 
 
-def change_accel_bias(bias_ax, bias_ay):
+def change_accel_bias(bias_ax, bias_ay, bias_az):
     """
     Change the accelerometer bias values in the config.json file.
     """
@@ -170,5 +170,6 @@ def change_accel_bias(bias_ax, bias_ay):
 
     data["MPU_CONFIG"]["bias_ax"] = bias_ax
     data["MPU_CONFIG"]["bias_ay"] = bias_ay
+    data["MPU_CONFIG"]["bias_az"] = bias_az
 
     save_config()

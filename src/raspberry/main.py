@@ -250,8 +250,7 @@ class SelfBalancingRobot:
                 print("Starting calibration...")
                 self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
                 num_samples = data["MPU_CONFIG"]["calibration_samples"]
-                self.driver.mpu.calibrate_gyro(num_samples=num_samples)
-                self.driver.mpu.calibrate_accel(num_samples=num_samples)
+                self.driver.mpu.calibrate_mpu(num_samples=num_samples)
                 self.ble.send_telemetry(
                     f",M:Calibrated the gyro and accelerometer with {num_samples} samples!"
                 )

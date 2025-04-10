@@ -119,7 +119,7 @@ class Driving:
     def balance(self, current_speed=0.0, target_speed=0.0):
         """Balance the robot without moving (stationary balancing)."""
         # Get current angle using both gyro and accelerometer for better accuracy
-        current_angle, _ = self.mpu.combined_angle()
+        current_angle = self.mpu.get_current_angle()
 
         # Calculate the error relative to the balance target
         self.set_balance_angle(current_speed, target_speed)
@@ -274,7 +274,7 @@ class Driving:
         self.motors.stop()
         self.error_sum = 0
         self.direction = 0
-        gyro_angle, _, _ = self.mpu.angle_from_gyro()
+        gyro_angle = self.mpu.get_current_angle()
         return gyro_angle, 0, 0
 
     def turn(self, angle=90, direction=1):
@@ -295,7 +295,7 @@ class Driving:
 
         # Monitor turning using gyro z-axis
         while abs(self.mpu.angle_z - target_z_angle) > 5:  # Allow 5° tolerance
-            _, _, _ = self.mpu.angle_from_gyro()  # Update angles
+            _ = self.mpu.get_current_angle()  # Update angles
             time.sleep(0.01)
 
             # Safety timeout

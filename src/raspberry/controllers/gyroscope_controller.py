@@ -1,7 +1,10 @@
-import math
-import time
 from machine import I2C, Pin
+import time
+import math
+import ustruct
+import uasyncio as asyncio
 from parameters.parameters import data, change_gyro_bias, change_accel_bias
+
 
 
 class MPU6050:
@@ -26,11 +29,12 @@ class MPU6050:
     # Accelerometer bias
     BIAS_AX = data["MPU_CONFIG"]["bias_ax"]
     BIAS_AY = data["MPU_CONFIG"]["bias_ay"]
+    BIAS_AZ = data["MPU_CONFIG"]["bias_az"]
 
     # Gyroscope bias
-    BIAS_X = data["MPU_CONFIG"]["bias_x"]
-    BIAS_Y = data["MPU_CONFIG"]["bias_y"]
-    BIAS_Z = data["MPU_CONFIG"]["bias_z"]
+    BIAS_GX = data["MPU_CONFIG"]["bias_gx"]
+    BIAS_GY = data["MPU_CONFIG"]["bias_gy"]
+    BIAS_GZ = data["MPU_CONFIG"]["bias_gz"]
 
     # Default is ±250 deg/s range, which gives 131 LSB/(deg/s)
     GYRO_SCALE_FACTOR = data["MPU_CONFIG"]["gyro_scale_factor"]
@@ -38,195 +42,189 @@ class MPU6050:
     # Time constant for complementary filter (in seconds)
     alpha = data["MPU_CONFIG"]["alpha"]
 
+    sample_time = data["PID_CONFIG"]["sample_time"]  # Sample time in seconds
+
     def __init__(self, sda_pin=26, scl_pin=27):
-        # Initialize I2C with SDA and SCL pins
         self.i2c = I2C(1, sda=Pin(sda_pin), scl=Pin(scl_pin))
 
-        # Initialize angle tracking values
-        self.prev_time = 0
-        self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z = 0, 0, 0
-        self.angle_accel_x, self.angle_accel_y, self.angle_accel_z = 0, 0, 0
-        self.combined_angle_x, self.combined_angle_y = 0, 0
+        # Additional fixed offset to account for any sensor-to-robot misalignment.
+        self.angle_offset = 0
+        self._current_pitch = 0
 
-        # Initialization now explicitly named
-        self.initialize_mpu()
+        # Wake up the MPU6050 (exit sleep mode)
+        self.i2c.writeto_mem(self.MPU_ADDR, 0x6B, b'\x00')
+        time.sleep(0.1)
 
-    def initialize_mpu(self):
-        # Wake up the MPU6050 (it is in sleep mode by default after power-up)
-        try:
-            self.i2c.writeto_mem(
-                self.MPU_ADDR, 0x6B, b"\x00"
-            )  # Write to PWR_MGMT_1 register
-        except OSError as e:
-            print("MPU6050 initialization error:", e)
-
-    def read_word(self, register):
-        high = self.i2c.readfrom_mem(self.MPU_ADDR, register, 1)
-        low = self.i2c.readfrom_mem(self.MPU_ADDR, register + 1, 1)
-        value = (high[0] << 8) + low[0]
-        # Convert to signed 16-bit if the value is negative
-        if value >= 0x8000:
-            value -= 0x10000
+    def read_raw_data(self, reg_addr):
+        # Read two bytes from the specified register and convert them into a signed 16-bit integer.
+        data = self.i2c.readfrom_mem(self.MPU_ADDR, reg_addr, 2)
+        value = ustruct.unpack('>h', data)[0]
         return value
 
     def read_accel(self):
-        ax = self.read_word(self.ACCEL_XOUT_H)
-        ay = self.read_word(self.ACCEL_YOUT_H)
-        az = self.read_word(self.ACCEL_ZOUT_H)
+        # Read the raw accelerometer data.
+        ax = self.read_raw_data(0x3B)
+        ay = self.read_raw_data(0x3D)
+        az = self.read_raw_data(0x3F)
+        # Correct the reading by subtracting the bias then converting to g's (16384 LSB/g for ±2g range).
+        ax = (ax - self.BIAS_AX) / 16384.0
+        ay = (ay - self.BIAS_AY) / 16384.0
+        az = (az - self.BIAS_AZ) / 16384.0
         return ax, ay, az
 
     def read_gyro(self):
-        gx = self.read_word(self.GYRO_XOUT_H) - self.BIAS_X
-        gy = self.read_word(self.GYRO_YOUT_H) - self.BIAS_Y
-        gz = self.read_word(self.GYRO_ZOUT_H) - self.BIAS_Z
+        # Read the raw gyroscope data.
+        gx = self.read_raw_data(0x43)
+        gy = self.read_raw_data(0x45)
+        gz = self.read_raw_data(0x47)
+        # Correct the reading by subtracting the bias then converting to degrees per second (131 LSB/dps for ±250°/s).
+        gx = (gx - self.BIAS_GX) / 131.0
+        gy = (gy - self.BIAS_GY) / 131.0
+        gz = (gz - self.BIAS_GZ) / 131.0
         return gx, gy, gz
 
-    def calc_accel_angles(self):
+    def calibrate_mpu(self, num_samples=1000, delay=0.005):
+        """
+        Calibrate sensor biases.
+        
+        IMPORTANT:
+         - Place the robot in a known, level position.
+         - Expected raw readings for level configuration (±2g): X ~0, Y ~0, Z ~+16384.
+         
+        The calculated biases are used to ensure that, after correction, the Z axis shows about
+        1g (and X & Y near 0) when the robot is level.
+        """
+        print("Calibrating sensor biases.")
+        print("Place the robot in a known, level position and keep it still.")
+        ax_sum, ay_sum, az_sum = 0, 0, 0
+        gx_sum, gy_sum, gz_sum = 0, 0, 0
+
+        for _ in range(num_samples):
+            ax_sum += self.read_raw_data(0x3B)
+            ay_sum += self.read_raw_data(0x3D)
+            az_sum += self.read_raw_data(0x3F)
+            gx_sum += self.read_raw_data(0x43)
+            gy_sum += self.read_raw_data(0x45)
+            gz_sum += self.read_raw_data(0x47)
+            time.sleep(delay)
+
+        avg_ax = ax_sum / num_samples
+        avg_ay = ay_sum / num_samples
+        avg_az = az_sum / num_samples
+
+        # For level position, the expected raw measurement is:
+        #   X: 0, Y: 0, Z: 16384 (1g)
+        self.BIAS_AX = avg_ax
+        self.BIAS_AY = avg_ay
+        self.BIAS_AZ = avg_az - 16384
+        change_accel_bias(self.BIAS_AX, self.BIAS_AY, self.BIAS_AZ)
+
+        # Gyroscope bias: computed as average (should be nearly zero if there is no rotation)
+        self.BIAS_GX = gx_sum / num_samples
+        self.BIAS_GY = gy_sum / num_samples
+        self.BIAS_GZ = gz_sum / num_samples
+        change_gyro_bias(self.BIAS_GX, self.BIAS_GY, self.BIAS_GZ)
+        print("Accelerometer biases (raw units):", self.BIAS_AX, self.BIAS_AY, self.BIAS_AZ)
+        print("Gyroscope biases (raw units):", self.BIAS_GX, self.BIAS_GY, self.BIAS_GZ)
+
+        self.calibrate_inclination_offset()
+        print("Calibration complete.")
+        self.start_update_task()
+
+    def calibrate_inclination_offset(self):
+        """
+        Calibrate a fixed inclination offset.
+        With the accelerometer calibrated, when the robot is level the computed pitch (inclination)
+        should be 0°. Any systematic difference is stored and subtracted from future measurements.
+        """
+        print("Calibrating inclination offset. Ensure the robot is level.")
+        time.sleep(2)
         ax, ay, az = self.read_accel()
-        # Convert to g forces (assuming ±2g range, which is 16384 LSB/g)
-        ax_g = ax / 16384.0
-        ay_g = ay / 16384.0
-        az_g = az / 16384.0
+        # Compute pitch (using the X axis as the forward direction)
+        acc_angle = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
+        self.angle_offset = acc_angle
+        print("Angle offset determined at: {:.2f}°".format(self.angle_offset))
 
-        # Calculate angles using arctangent
-        accel_angle_x = (
-            math.atan2(ay_g, math.sqrt(ax_g**2 + az_g**2)) * 180.0 / math.pi
-        )  # Roll
-        accel_angle_y = (
-            math.atan2(-ax_g, math.sqrt(ay_g**2 + az_g**2)) * 180.0 / math.pi
-        )  # Pitch
-
-        return accel_angle_x, accel_angle_y
-
-    def angle_from_gyro(self):
-        # Get current time in milliseconds
-        curr_time = time.ticks_ms()
-
-        # Calculate time difference in seconds
-        if self.prev_time == 0:
-            dt = 0
-        else:
-            dt = time.ticks_diff(curr_time, self.prev_time) / 1000.0
-
-        self.prev_time = curr_time
-
-        # Skip integration on first call
-        if dt == 0:
-            return 0, 0, 0
-
-        # Read gyroscope data (angular velocity)
+    def complementary_filter(self, dt, prev_angle):
+        """
+        Apply a complementary filter to combine:
+        - Gyro integrated angle (smooth but drifting).
+        - Accelerometer angle (noisy but stable with proper calibration).
+        """
+        ax, ay, az = self.read_accel()
         gx, gy, gz = self.read_gyro()
 
-        # Convert raw gyro values to degrees per second
-        gx_dps = gx / self.GYRO_SCALE_FACTOR
-        gy_dps = gy / self.GYRO_SCALE_FACTOR
-        gz_dps = gz / self.GYRO_SCALE_FACTOR
+        # Compute angle from accelerometer (pitch using X axis).
+        acc_angle = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
+        # Adjust by the fixed offset determined during calibration.
+        acc_angle -= self.angle_offset
 
-        # Calculate gyro angle change
-        gyro_angle_x = gx_dps * dt
-        gyro_angle_y = gy_dps * dt
-        gyro_angle_z = gz_dps * dt
+        # Integrate gyroscope reading for angle update.
+        # Here we assume the gyroscope's Y axis is aligned with the pitch rotation.
+        gyro_angle = prev_angle + gx * dt
 
-        self.angle_gyro_x += gyro_angle_x
-        self.angle_gyro_y += gyro_angle_y
-        self.angle_gyro_z += gyro_angle_z
-        return self.angle_gyro_x, self.angle_gyro_y, self.angle_gyro_z
+        # Complementary filter blending.
+        alpha = 0.95  # You may adjust this parameter as needed.
+        filtered_angle = alpha * gyro_angle + (1 - alpha) * acc_angle
 
-    def combined_angle(self):
-        # Get current time in milliseconds
-        curr_time = time.ticks_ms()
+        return filtered_angle
 
-        # Calculate time difference in seconds
-        if self.prev_time == 0:
-            dt = 0
-        else:
-            dt = time.ticks_diff(curr_time, self.prev_time) / 1000.0
+    # Global variable to hold the current pitch angle.
+    _current_pitch = 0
 
-        self.prev_time = curr_time
+    def start_update_task(self, update_interval=0):
+        if update_interval <= 0:
+            update_interval = self.sample_time
+        # Only create the task if it has not been created already.
+        if not hasattr(self, "_update_task") or self._update_task.done():
+            self._update_task = asyncio.create_task(self.update_pitch(update_interval))
 
-        # Skip integration on first call
-        if dt == 0:
-            return 0, 0
+    async def update_pitch(self, update_interval=0):
+        """
+        Asynchronous task that continuously updates the pitch angle.
+        
+        This function should run in a background task.
+        """
+        if update_interval <= 0:
+            update_interval = self.sample_time
 
-        # Read gyroscope data (angular velocity)
-        gx, gy, gz = self.read_gyro()
+        last_time = time.ticks_ms()
+        while True:
+            current_time = time.ticks_ms()
+            dt = time.ticks_diff(current_time, last_time) / 1000.0
+            last_time = current_time
+            
+            self._current_pitch = self.complementary_filter(dt, self._current_pitch)
+            # Optionally, you can log or process the updated pitch here.
+            await asyncio.sleep(update_interval)
 
-        # Convert raw gyro values to degrees per second
-        gx_dps = gx / self.GYRO_SCALE_FACTOR
-        gy_dps = gy / self.GYRO_SCALE_FACTOR
-        gz_dps = gz / self.GYRO_SCALE_FACTOR
+    def get_current_angle(self):
+        """
+        Returns the most recent pitch (inclination) angle in degrees.
+        
+        This function can be called from other asynchronous tasks.
+        """
+        return self._current_pitch
 
-        # Calculate gyro angle change
-        gyro_angle_x = gx_dps * dt
-        gyro_angle_y = gy_dps * dt
-        gyro_angle_z = gz_dps * dt
+if __name__ == "__main__":
+    async def main():
+        # Initialize I2C; adjust I2C port and pin assignments as needed.
+        mpu = MPU6050(sda_pin=data["MPU_CONFIG"]["sda_pin"],
+                    scl_pin=data["MPU_CONFIG"]["scl_pin"])
+        
+        # Perform sensor calibration; ensure the robot is in the proper level configuration.
+        mpu.calibrate_mpu(num_samples=500)
 
-        # Read accelerometer angles
-        accel_angle_x, accel_angle_y = self.calc_accel_angles()
+        
+        # Start the background task that updates the pitch continuously.
+        asyncio.create_task(mpu.update_pitch())
+        
+        # Here is an example loop that prints the current pitch every second.
+        # In your application, you might use get_current_angle() as needed in other tasks.
+        while True:
+            angle = mpu.get_current_angle()
+            print("Current Pitch (inclination): {:.2f}°".format(angle))
+            await asyncio.sleep(0.5)
 
-        self.angle_gyro_x += gyro_angle_x
-        self.angle_gyro_y += gyro_angle_y
-        self.angle_gyro_z += gyro_angle_z
-
-        # Complementary filter to combine gyro and accelerometer angles
-        self.combined_angle_x = (
-            self.alpha * (self.angle_gyro_x) + (1 - self.alpha) * accel_angle_x
-        )
-        self.combined_angle_y = (
-            self.alpha * (self.angle_gyro_y) + (1 - self.alpha) * accel_angle_y
-        )
-
-        print(
-            f"Combined Angle X: {self.combined_angle_x}, Combined Angle Y: {self.combined_angle_y}"
-        )
-
-        return (self.combined_angle_x, self.combined_angle_y)
-
-    def calibrate_accel(self, num_samples=5000):
-        # Calibrate the accelerometer using some samples
-        bias_x, bias_y = 0, 0
-        for _ in range(num_samples):
-            ax, ay, az = self.read_accel()
-            bias_x += ax
-            bias_y += ay
-        bias_x /= num_samples
-        bias_y /= num_samples
-
-        print("Bias X:", bias_x)
-        print("Bias Y:", bias_y)
-
-        set_bias_ax = self.BIAS_AX + bias_x
-        set_bias_ay = self.BIAS_AY + bias_y
-
-        self.BIAS_AX = set_bias_ax
-        self.BIAS_AY = set_bias_ay
-
-        change_accel_bias(set_bias_ax, set_bias_ay)
-        print("Bias values updated in config.json")
-
-    def calibrate_gyro(self, num_samples=5000):
-        # Calibrate the gyroscope using some samples
-        bias_x, bias_y, bias_z = 0, 0, 0
-        for _ in range(num_samples):
-            gx, gy, gz = self.read_gyro()
-            bias_x += gx
-            bias_y += gy
-            bias_z += gz
-        bias_x /= num_samples
-        bias_y /= num_samples
-        bias_z /= num_samples
-
-        print("Bias X:", bias_x)
-        print("Bias Y:", bias_y)
-        print("Bias Z:", bias_z)
-
-        set_bias_x = self.BIAS_X + bias_x
-        set_bias_y = self.BIAS_Y + bias_y
-        set_bias_z = self.BIAS_Z + bias_z
-
-        self.BIAS_X = set_bias_x
-        self.BIAS_Y = set_bias_y
-        self.BIAS_Z = set_bias_z
-
-        change_gyro_bias(set_bias_x, set_bias_y, set_bias_z)
-        print("Bias values updated in config.json")
+    # To run the asynchronous tasks:
+    asyncio.run(main())

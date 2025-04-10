@@ -1,7 +1,7 @@
 from machine import Pin, I2C
 import asyncio
 
-from controllers.gyroscope_controller import MPU6050
+from controllers.gyroscope_controller_old import MPU6050
 from controllers.encoder_controller import WheelEncoder
 
 
