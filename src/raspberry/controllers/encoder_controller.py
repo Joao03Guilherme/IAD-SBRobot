@@ -77,7 +77,7 @@ class WheelEncoder:
                 self.last_measurement_time = current_time
 
             # Small sleep to prevent CPU overload
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.005)
 
     def start(self):
         """Start the background measurement task."""

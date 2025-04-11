@@ -40,8 +40,10 @@ class Driving:
         self.balance_kp = params.data["PID_CONFIG"]["kp"]
         self.balance_ki = params.data["PID_CONFIG"]["ki"]
         self.balance_kd = params.data["PID_CONFIG"]["kd"]
+        self.k_damping = params.data["PID_CONFIG"]["k_damping"]
         self.sample_time = params.data["PID_CONFIG"]["sample_time"]
         self.max_safe_tilt = params.data["PID_CONFIG"]["max_safe_tilt"]
+        self.max_correction_tilt = params.data["PID_CONFIG"]["max_correction_tilt"]
 
         # Initialize PID state
         self.error_sum = 0
@@ -101,20 +103,16 @@ class Driving:
         # Calculate balance target:
         # - First term: Non-linear acceleration component that increases with speed
         # - Second term: Compensates for friction/drag forces
-        self.balance_angle = (
-            1 + (self.k_torque_per_pw * current_speed) ** 2
-        ) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
+        #self.balance_angle = (
+        #    1 + (self.k_torque_per_pw * current_speed) ** 2
+        #) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
 
         # Add a component of stay still
-        self.balance_angle += (
+        self.balance_angle = (
             params.data["PID_CONFIG"]["balance2offset"]
             * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count)
             / 2
-        )  # Round to 2 decimal places
-        # Constrain the balance target to safe limits
-        self.balance_angle = max(
-            -self.max_safe_tilt, min(self.max_safe_tilt, self.balance_angle)
-        )
+        ) 
 
     def balance(self, current_speed=0.0, target_speed=0.0):
         """Balance the robot without moving (stationary balancing)."""
@@ -127,6 +125,12 @@ class Driving:
 
         self.angle_data.append(current_angle)
         self.balance_angle_data.append(self.balance_angle)
+        if len(self.angle_data) > 1:
+           self.balance_angle = self.balance_angle - (self.balance_angle - self.balance_angle_data[-2]) * self.k_damping
+
+        self.balance_angle = max(
+            -self.max_correction_tilt, min(self.max_correction_tilt, self.balance_angle)
+        )
 
         print("Target Angle:", self.balance_angle)
         print("Current Angle:", current_angle)

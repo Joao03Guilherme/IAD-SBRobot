@@ -15,8 +15,10 @@ from parameters.parameters import (
     change_kd,
     change_ki,
     change_kp,
+    change_k_damping,
     change_balance2offset,
     change_sample_time,
+    change_max_correction_tilt,
     change_max_safe_tilt,
     change_alpha,
 )
@@ -95,6 +97,8 @@ class SelfBalancingRobot:
             elif param == "KD":
                 success = change_kd(value)
                 self.driver.balance_kd = value
+            elif param == "K_DAMPING":
+                success = change_k_damping(value)
             elif param == "SAMPLE":
                 success = change_sample_time(value)
                 self.driver.sample_time = value
@@ -102,6 +106,8 @@ class SelfBalancingRobot:
                 success = change_alpha(value)
             elif param == "B2O":
                 success = change_balance2offset(value)
+            elif param == "MCT":
+                success = change_max_correction_tilt(value)
             elif param == "MAXTILT":
                 success = change_max_safe_tilt(value)
                 self.driver.max_safe_tilt = value

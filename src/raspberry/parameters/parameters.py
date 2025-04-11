@@ -70,6 +70,21 @@ def change_kd(kd):
     save_config()
     return True
 
+def change_k_damping(k_damping):
+    """
+    Change the k_damping value in the config.json file.
+    """
+
+    if not isinstance(k_damping, float):
+        raise ValueError("k_damping must be a float")
+
+    if k_damping < 0:
+        raise ValueError("k_damping must be greater than or equal to 0")
+
+    data["PID_CONFIG"]["k_damping"] = k_damping
+
+    save_config()
+    return True
 
 def change_balance2offset(balance2offset):
     """
@@ -118,6 +133,21 @@ def change_alpha(alpha):
     save_config()
     return True
 
+def change_max_correction_tilt(max_correction_tilt):
+    """
+    Change the max_correction_tilt value in the config.json file.
+    """
+
+    if not isinstance(max_correction_tilt, float):
+        raise ValueError("max_correction_tilt must be a float")
+
+    if max_correction_tilt < 0:
+        raise ValueError("max_correction_tilt must be greater than or equal to 0")
+
+    data["MAX_CORRECTION_TILT"] = max_correction_tilt
+
+    save_config()
+    return True
 
 def change_max_safe_tilt(max_safe_tilt):
     """

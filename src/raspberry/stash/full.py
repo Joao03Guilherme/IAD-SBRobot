@@ -12,7 +12,7 @@ PID_CONFIG = {
     "Ki": 40,
     "Kd": 0.05,
     "sample_time": 0.005,  # 5ms
-    "target_angle": -2.5,
+    "target_angle": 0,
 }
 
 # Motor pin configuration
