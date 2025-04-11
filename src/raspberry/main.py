@@ -144,7 +144,7 @@ class SelfBalancingRobot:
 
         balance_angle = 0
         if len(self.driver.balance_angle_data) > 0:
-            balance_angle = self.driver.balance_angle_data[-1]
+            balance_angle = self.driver.balance_angle
 
         # Create telemetry string (simpler than JSON)
         telemetry = f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
