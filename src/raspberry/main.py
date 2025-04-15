@@ -7,6 +7,7 @@ import time
 from machine import Pin, I2C
 
 import asyncio
+import _thread  # Add this import for thread support
 from controllers.motor_controller import MotorController
 from controllers.buzzer_controller import (
     BuzzerController,
@@ -65,7 +66,17 @@ class SelfBalancingRobot:
         """Listen for BLE commands and handle them."""
         while True:
             if self.ble.connected:
+                # Stop the periodic beeping once connection is established
+                if self.buzzer.periodic_beeping:
+                    print("Connection established, stopping periodic beep")
+                    await self.buzzer.stop_periodic_beeping()
                 await asyncio.sleep(0.1)  # Adjust the sleep time as needed
+            else:
+                # If connection is lost, restart periodic beeping
+                if not self.buzzer.periodic_beeping:
+                    print("Connection lost, restarting periodic beep")
+                    self.buzzer.start_periodic_beeping()
+                await asyncio.sleep(0.5)  # Check less frequently when disconnected
 
     async def start(self):
         """Start the balancing loop."""
@@ -203,7 +214,49 @@ class SelfBalancingRobot:
         # Handle numeric commands (like "1" or "2")
         parts = cmd.split(" ")
         cmd_num = parts[0]
+        
+        # Add debug print to see if command even reaches here
+        print(f"DEBUG: Processing command num '{cmd_num}' from parts {parts}")
+        
+        # Make sure "7" is properly recognized as a SOUND command
+        if cmd_num == "7":
+            print("SOUND command detected via '7'")
+            
+            # If no sound type provided, show error
+            if len(parts) < 2:
+                error_msg = "Sound command requires a sound type (starwars, r2d2, stop)"
+                print(error_msg)
+                self.ble.send_telemetry(f",M:{error_msg}")
+                return
+                
+            # Get sound type and set default parameters
+            sound_type = parts[1].lower()
+            print(f"Playing sound: {sound_type}")
+            
+            # Set default parameters
+            tempo = data["BUZZER_CONFIG"]["default_tempo"]
+            volume = data["BUZZER_CONFIG"]["default_volume"]
+            
+            # Set volume to maximum for better audibility
+            self.buzzer.set_volume(1.0)
+            
+            # Process sound type
+            if sound_type == "starwars":
+                self.buzzer.play_star_wars_song()
+                self.ble.send_telemetry(f",M:Playing Star Wars theme")
+            elif sound_type == "r2d2":
+                duration = 5
+                self.buzzer.play_random_sound(duration_seconds=duration)
+                self.ble.send_telemetry(f",M:Playing R2D2 sounds")
+            elif sound_type == "stop":
+                asyncio.create_task(self.buzzer.stop())
+                self.ble.send_telemetry(",M:Stopped all sounds")
+            else:
+                self.ble.send_telemetry(f",M:Unknown sound type: {sound_type}")
+            
+            return
 
+        # Continue with the normal command handling
         if cmd_num in COMMANDS:
             action = COMMANDS[cmd_num]["action"]
             print(f"Executing {action} command")
@@ -261,75 +314,58 @@ class SelfBalancingRobot:
             elif action == "CALIBRATE":
                 print("Starting calibration...")
                 self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
-                await self.buzzer.play_melody_async()
-
-                # Run the calibration
-                num_samples = data["MPU_CONFIG"]["calibration_samples"]
-                self.driver.mpu.calibrate_mpu(num_samples=num_samples)
-
-                # Stop the music once calibration is complete
+                
+                # Make sure volume is at maximum
+                self.buzzer.set_volume(1.0)
+                print("Starting calibration melody")
+                
+                # Create a simpler repeating melody that's easier to hear
+                calibration_melody = self.buzzer.star_wars_melody * 2
+                
+                # Start the melody playing in a background task
+                melody_task = self.buzzer.play_melody_async(calibration_melody, base_tempo=100)
+                
+                # Create a flag to track calibration completion
+                calibration_done = False
+                
+                # Define a function to run calibration in a separate thread
+                def run_calibration():
+                    nonlocal calibration_done
+                    try:
+                        print("Running MPU calibration in separate thread")
+                        num_samples = data["MPU_CONFIG"]["calibration_samples"]
+                        self.driver.mpu.calibrate_mpu(num_samples=num_samples)
+                        print("Calibration thread complete")
+                        calibration_done = True
+                    except Exception as e:
+                        print(f"Error in calibration thread: {e}")
+                        calibration_done = True
+                
+                # Start calibration in a separate thread
+                _thread.start_new_thread(run_calibration, ())
+                
+                # Wait for calibration to complete while allowing the event loop to run
+                print("Waiting for calibration to complete...")
+                while not calibration_done:
+                    await asyncio.sleep(0.1)  # Yield to event loop regularly
+                
+                print("Calibration complete - stopping melody")
+                # Stop the melody now that calibration is done
                 await self.buzzer.stop()
-
+                
+                # Notify user
+                num_samples = data["MPU_CONFIG"]["calibration_samples"]
                 self.ble.send_telemetry(
                     f",M:Calibrated the gyro and accelerometer with {num_samples} samples!"
                 )
-                print("Calibration complete")
                 return
 
             elif action == "SOUND":
-                print("Sound command received")
+                print("Sound command received via COMMANDS dictionary")
                 if len(parts) < 2:
-                    self.ble.send_telemetry(
-                        ",M:Sound command requires a sound type (starwars, r2d2, stop)"
-                    )
+                    print("Error: SOUND command requires a sound type (starwars, r2d2, stop)")
+                    self.ble.send_telemetry(f",M:Sound command requires a sound type")
                     return
-
-                sound_type = parts[1].lower()
-
-                # Optional tempo parameter
-                tempo = data["BUZZER_CONFIG"]["default_tempo"]
-                if len(parts) >= 3:
-                    try:
-                        tempo = float(parts[2])
-                        self.buzzer.set_tempo(tempo)
-                    except ValueError:
-                        self.ble.send_telemetry(",M:Invalid tempo value, using default")
-
-                # Optional volume parameter
-                volume = data["BUZZER_CONFIG"]["default_volume"]
-                if len(parts) >= 4:
-                    try:
-                        volume = float(parts[3])
-                        self.buzzer.set_volume(volume)
-                    except ValueError:
-                        self.ble.send_telemetry(
-                            ",M:Invalid volume value, using default"
-                        )
-
-                # Process the sound command
-                if sound_type == "starwars":
-                    self.buzzer.play_star_wars_song()
-                    self.ble.send_telemetry(
-                        f",M:Playing Star Wars theme (tempo={tempo})"
-                    )
-                elif sound_type == "r2d2":
-                    # Extract optional duration
-                    duration = 5
-                    if len(parts) >= 5:
-                        try:
-                            duration = int(parts[4])
-                        except ValueError:
-                            pass
-
-                    self.buzzer.play_random_sound(duration_seconds=duration)
-                    self.ble.send_telemetry(f",M:Playing R2D2 sounds for {duration}s")
-                elif sound_type == "stop":
-                    self.buzzer.stop()
-                    self.ble.send_telemetry(",M:Stopped all sounds")
-                else:
-                    self.ble.send_telemetry(f",M:Unknown sound type: {sound_type}")
-
-                return
 
             else:
                 print(f"Action not implemented: {action}")

@@ -186,7 +186,7 @@ class Driving:
 
         # Use the balance method with smoothed target speed
         current_angle, driving_power = self.balance(
-            current_speed=current_speed, target_speed=target_speed
+            current_speed=0, target_speed=0
         )
 
         # Set direction for wheel encoder based on current target
