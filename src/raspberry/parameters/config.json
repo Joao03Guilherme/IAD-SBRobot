@@ -62,7 +62,7 @@
     "pin": 18,
     "frequency": 440,
     "duration": 1000,
-    "default_tempo": 1.0,
+    "default_tempo": 2.0,
     "default_volume": 0.5,
     "r2d2_min_freq": 1000,
     "r2d2_max_freq": 4000,

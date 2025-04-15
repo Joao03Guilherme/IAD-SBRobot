@@ -46,10 +46,6 @@ class SelfBalancingRobot:
         
         # Initialize buzzer controller
         self.buzzer = BuzzerController()
-        
-        # Play a startup sound
-        self.buzzer.play_tone(880, 100)
-        self.buzzer.play_tone(1320, 100)
 
         # Wrapper for async callback
         def command_callback(cmd):
@@ -263,8 +259,15 @@ class SelfBalancingRobot:
             elif action == "CALIBRATE":
                 print("Starting calibration...")
                 self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
+                self.buzzer.play_star_wars_song()
+                
+                # Run the calibration
                 num_samples = data["MPU_CONFIG"]["calibration_samples"]
                 self.driver.mpu.calibrate_mpu(num_samples=num_samples)
+                
+                # Stop the music once calibration is complete
+                self.buzzer.stop()
+                
                 self.ble.send_telemetry(
                     f",M:Calibrated the gyro and accelerometer with {num_samples} samples!"
                 )

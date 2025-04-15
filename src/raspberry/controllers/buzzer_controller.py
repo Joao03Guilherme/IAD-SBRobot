@@ -168,6 +168,14 @@ class BuzzerController:
         self.current_task = asyncio.create_task(self._play_star_wars_task())
         return True
     
+    async def play_star_wars_song_async(self):
+        """Play the Star Wars Imperial March theme asynchronously.
+        
+        This method returns a task that can be awaited to play the entire song.
+        """
+        self.stop()  # Stop any currently playing sounds
+        return await self._play_star_wars_task()
+    
     def play_random_sound(self, duration_seconds=5):
         """Play random R2D2-like sounds in the background.
         
@@ -181,6 +189,17 @@ class BuzzerController:
             self._play_r2d2_sounds_task(duration_seconds)
         )
         return True
+    
+    async def play_random_sound_async(self, duration_seconds=5):
+        """Play random R2D2-like sounds asynchronously.
+        
+        Args:
+            duration_seconds: Duration in seconds to generate sounds for
+            
+        This method returns a task that can be awaited to play all sounds.
+        """
+        self.stop()  # Stop any currently playing sounds
+        return await self._play_r2d2_sounds_task(duration_seconds)
     
     def stop(self):
         """Stop all sounds being played."""
