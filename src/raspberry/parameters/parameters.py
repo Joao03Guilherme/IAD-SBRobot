@@ -70,6 +70,7 @@ def change_kd(kd):
     save_config()
     return True
 
+
 def change_k_damping(k_damping):
     """
     Change the k_damping value in the config.json file.
@@ -85,6 +86,7 @@ def change_k_damping(k_damping):
 
     save_config()
     return True
+
 
 def change_balance2offset(balance2offset):
     """
@@ -133,6 +135,7 @@ def change_alpha(alpha):
     save_config()
     return True
 
+
 def change_max_correction_tilt(max_correction_tilt):
     """
     Change the max_correction_tilt value in the config.json file.
@@ -148,6 +151,7 @@ def change_max_correction_tilt(max_correction_tilt):
 
     save_config()
     return True
+
 
 def change_max_safe_tilt(max_safe_tilt):
     """

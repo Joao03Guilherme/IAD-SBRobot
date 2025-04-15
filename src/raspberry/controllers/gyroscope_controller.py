@@ -6,7 +6,6 @@ import uasyncio as asyncio
 from parameters.parameters import data, change_gyro_bias, change_accel_bias
 
 
-
 class MPU6050:
     # MPU6050 I2C Address
     MPU_ADDR = data["MPU_CONFIG"]["address"]
@@ -52,13 +51,13 @@ class MPU6050:
         self._current_pitch = 0
 
         # Wake up the MPU6050 (exit sleep mode)
-        self.i2c.writeto_mem(self.MPU_ADDR, 0x6B, b'\x00')
+        self.i2c.writeto_mem(self.MPU_ADDR, 0x6B, b"\x00")
         time.sleep(0.1)
 
     def read_raw_data(self, reg_addr):
         # Read two bytes from the specified register and convert them into a signed 16-bit integer.
         data = self.i2c.readfrom_mem(self.MPU_ADDR, reg_addr, 2)
-        value = ustruct.unpack('>h', data)[0]
+        value = ustruct.unpack(">h", data)[0]
         return value
 
     def read_accel(self):
@@ -86,11 +85,11 @@ class MPU6050:
     def calibrate_mpu(self, num_samples=1000, delay=0.005):
         """
         Calibrate sensor biases.
-        
+
         IMPORTANT:
          - Place the robot in a known, level position.
          - Expected raw readings for level configuration (±2g): X ~0, Y ~0, Z ~+16384.
-         
+
         The calculated biases are used to ensure that, after correction, the Z axis shows about
         1g (and X & Y near 0) when the robot is level.
         """
@@ -124,7 +123,12 @@ class MPU6050:
         self.BIAS_GY = gy_sum / num_samples
         self.BIAS_GZ = gz_sum / num_samples
         change_gyro_bias(self.BIAS_GX, self.BIAS_GY, self.BIAS_GZ)
-        print("Accelerometer biases (raw units):", self.BIAS_AX, self.BIAS_AY, self.BIAS_AZ)
+        print(
+            "Accelerometer biases (raw units):",
+            self.BIAS_AX,
+            self.BIAS_AY,
+            self.BIAS_AZ,
+        )
         print("Gyroscope biases (raw units):", self.BIAS_GX, self.BIAS_GY, self.BIAS_GZ)
 
         self.calibrate_inclination_offset()
@@ -141,7 +145,7 @@ class MPU6050:
         time.sleep(2)
         ax, ay, az = self.read_accel()
         # Compute pitch (using the X axis as the forward direction)
-        acc_angle = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
+        acc_angle = math.degrees(math.atan2(ax, math.sqrt(ay * ay + az * az)))
         self.angle_offset = acc_angle
         print("Angle offset determined at: {:.2f}°".format(self.angle_offset))
 
@@ -155,7 +159,7 @@ class MPU6050:
         gx, gy, gz = self.read_gyro()
 
         # Compute angle from accelerometer (pitch using X axis).
-        acc_angle = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
+        acc_angle = math.degrees(math.atan2(ay, math.sqrt(ax * ax + az * az)))
         # Adjust by the fixed offset determined during calibration.
         acc_angle -= self.angle_offset
 
@@ -182,7 +186,7 @@ class MPU6050:
     async def update_pitch(self, update_interval=0):
         """
         Asynchronous task that continuously updates the pitch angle.
-        
+
         This function should run in a background task.
         """
         if update_interval <= 0:
@@ -193,7 +197,7 @@ class MPU6050:
             current_time = time.ticks_ms()
             dt = time.ticks_diff(current_time, last_time) / 1000.0
             last_time = current_time
-            
+
             self._current_pitch = self.complementary_filter(dt, self._current_pitch)
             # Optionally, you can log or process the updated pitch here.
             await asyncio.sleep(update_interval)
@@ -201,24 +205,26 @@ class MPU6050:
     def get_current_angle(self):
         """
         Returns the most recent pitch (inclination) angle in degrees.
-        
+
         This function can be called from other asynchronous tasks.
         """
         return self._current_pitch
 
+
 if __name__ == "__main__":
+
     async def main():
         # Initialize I2C; adjust I2C port and pin assignments as needed.
-        mpu = MPU6050(sda_pin=data["MPU_CONFIG"]["sda_pin"],
-                    scl_pin=data["MPU_CONFIG"]["scl_pin"])
-        
+        mpu = MPU6050(
+            sda_pin=data["MPU_CONFIG"]["sda_pin"], scl_pin=data["MPU_CONFIG"]["scl_pin"]
+        )
+
         # Perform sensor calibration; ensure the robot is in the proper level configuration.
         mpu.calibrate_mpu(num_samples=500)
 
-        
         # Start the background task that updates the pitch continuously.
         asyncio.create_task(mpu.update_pitch())
-        
+
         # Here is an example loop that prints the current pitch every second.
         # In your application, you might use get_current_angle() as needed in other tasks.
         while True:

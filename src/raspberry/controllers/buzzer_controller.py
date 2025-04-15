@@ -1,243 +1,346 @@
 from machine import Pin, PWM
-import uasyncio as asyncio
-import urandom
-import time
-import parameters.parameters as params
+from parameters.parameters import params
+import asyncio
+
+# Notes definition (same as Arduino's frequency table)
+NOTE_FREQ = {
+    "REST": 0,
+    "NOTE_B0": 31,
+    "NOTE_C1": 33,
+    "NOTE_CS1": 35,
+    "NOTE_D1": 37,
+    "NOTE_DS1": 39,
+    "NOTE_E1": 41,
+    "NOTE_F1": 44,
+    "NOTE_FS1": 46,
+    "NOTE_G1": 49,
+    "NOTE_GS1": 52,
+    "NOTE_A1": 55,
+    "NOTE_AS1": 58,
+    "NOTE_B1": 62,
+    "NOTE_C2": 65,
+    "NOTE_CS2": 69,
+    "NOTE_D2": 73,
+    "NOTE_DS2": 78,
+    "NOTE_E2": 82,
+    "NOTE_F2": 87,
+    "NOTE_FS2": 93,
+    "NOTE_G2": 98,
+    "NOTE_GS2": 104,
+    "NOTE_A2": 110,
+    "NOTE_AS2": 117,
+    "NOTE_B2": 123,
+    "NOTE_C3": 131,
+    "NOTE_CS3": 139,
+    "NOTE_D3": 147,
+    "NOTE_DS3": 156,
+    "NOTE_E3": 165,
+    "NOTE_F3": 175,
+    "NOTE_FS3": 185,
+    "NOTE_G3": 196,
+    "NOTE_GS3": 208,
+    "NOTE_A3": 220,
+    "NOTE_AS3": 233,
+    "NOTE_B3": 247,
+    "NOTE_C4": 262,
+    "NOTE_CS4": 277,
+    "NOTE_D4": 294,
+    "NOTE_DS4": 311,
+    "NOTE_E4": 330,
+    "NOTE_F4": 349,
+    "NOTE_FS4": 370,
+    "NOTE_G4": 392,
+    "NOTE_GS4": 415,
+    "NOTE_A4": 440,
+    "NOTE_AS4": 466,
+    "NOTE_B4": 494,
+    "NOTE_C5": 523,
+    "NOTE_CS5": 554,
+    "NOTE_D5": 587,
+    "NOTE_DS5": 622,
+    "NOTE_E5": 659,
+    "NOTE_F5": 698,
+    "NOTE_FS5": 740,
+    "NOTE_G5": 784,
+    "NOTE_GS5": 831,
+    "NOTE_A5": 880,
+    "NOTE_AS5": 932,
+    "NOTE_B5": 988,
+    "NOTE_C6": 1047,
+    "NOTE_CS6": 1109,
+    "NOTE_D6": 1175,
+    "NOTE_DS6": 1245,
+    "NOTE_E6": 1319,
+    "NOTE_F6": 1397,
+    "NOTE_FS6": 1480,
+    "NOTE_G6": 1568,
+    "NOTE_GS6": 1661,
+    "NOTE_A6": 1760,
+    "NOTE_AS6": 1865,
+    "NOTE_B6": 1976,
+    "NOTE_C7": 2093,
+    "NOTE_CS7": 2217,
+    "NOTE_D7": 2349,
+    "NOTE_DS7": 2489,
+    "NOTE_E7": 2637,
+    "NOTE_F7": 2794,
+    "NOTE_FS7": 2960,
+    "NOTE_G7": 3136,
+    "NOTE_GS7": 3322,
+    "NOTE_A7": 3520,
+    "NOTE_AS7": 3729,
+    "NOTE_B7": 3951,
+    "NOTE_C8": 4186,
+    "NOTE_CS8": 4435,
+    "NOTE_D8": 4699,
+    "NOTE_DS8": 4978,
+}
+
+# === Star Wars melody ===
+star_wars_melody = [
+    "NOTE_AS4",
+    8,
+    "NOTE_AS4",
+    8,
+    "NOTE_AS4",
+    8,
+    "NOTE_F5",
+    2,
+    "NOTE_C6",
+    2,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F6",
+    2,
+    "NOTE_C6",
+    4,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F6",
+    2,
+    "NOTE_C6",
+    4,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_AS5",
+    8,
+    "NOTE_G5",
+    2,
+    "NOTE_C5",
+    8,
+    "NOTE_C5",
+    8,
+    "NOTE_C5",
+    8,
+    "NOTE_F5",
+    2,
+    "NOTE_C6",
+    2,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F6",
+    2,
+    "NOTE_C6",
+    4,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F6",
+    2,
+    "NOTE_C6",
+    4,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_AS5",
+    8,
+    "NOTE_G5",
+    2,
+    "NOTE_C5",
+    -8,
+    "NOTE_C5",
+    16,
+    "NOTE_D5",
+    -4,
+    "NOTE_D5",
+    8,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F5",
+    8,
+    "NOTE_F5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    4,
+    "NOTE_D5",
+    8,
+    "NOTE_E5",
+    4,
+    "NOTE_C5",
+    -8,
+    "NOTE_C5",
+    16,
+    "NOTE_D5",
+    -4,
+    "NOTE_D5",
+    8,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F5",
+    8,
+    "NOTE_C6",
+    -8,
+    "NOTE_G5",
+    16,
+    "NOTE_G5",
+    2,
+    "REST",
+    8,
+    "NOTE_C5",
+    8,
+    "NOTE_D5",
+    -4,
+    "NOTE_D5",
+    8,
+    "NOTE_AS5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_F5",
+    8,
+    "NOTE_F5",
+    8,
+    "NOTE_G5",
+    8,
+    "NOTE_A5",
+    8,
+    "NOTE_G5",
+    4,
+    "NOTE_D5",
+    8,
+    "NOTE_E5",
+    4,
+    "NOTE_C6",
+    -8,
+    "NOTE_C6",
+    16,
+    "NOTE_F6",
+    4,
+    "NOTE_DS6",
+    8,
+    "NOTE_CS6",
+    4,
+    "NOTE_C6",
+    8,
+    "NOTE_AS5",
+    4,
+    "NOTE_GS5",
+    8,
+    "NOTE_G5",
+    4,
+    "NOTE_F5",
+    8,
+    "NOTE_C6",
+    1,
+]
+
 
 class BuzzerController:
-    """Controller for playing sounds on a piezo buzzer using PWM.
-    
-    Features:
-    - Star Wars Imperial March theme
-    - R2D2 random beeping sounds
-    - Non-blocking sound playback using asyncio
-    """
-    
-    # Star Wars Imperial March notes and durations
-    IMPERIAL_MARCH_NOTES = [
-        392, 0, 392, 0, 392, 0, 311, 0, 466, 0, 392, 0, 311, 0, 466, 0, 392, 0,  # First phrase
-        587, 0, 587, 0, 587, 0, 622, 0, 466, 0, 370, 0, 311, 0, 466, 0, 392, 0,  # Second phrase
-        784, 0, 392, 0, 392, 0, 784, 0, 740, 0, 698, 0, 659, 0, 622, 0,          # Third phrase
-        659, 0, 415, 0, 554, 0, 523, 0, 494, 0, 466, 0, 440, 0, 
-        466, 0, 370, 0, 392, 0                                                    # Final notes
-    ]
-    
-    IMPERIAL_MARCH_DURATIONS = [
-        500, 50, 500, 50, 500, 50, 350, 50, 150, 50, 500, 50, 350, 50, 150, 50, 1000, 100,  # First phrase
-        500, 50, 500, 50, 500, 50, 350, 50, 150, 50, 500, 50, 350, 50, 150, 50, 1000, 100,  # Second phrase
-        500, 50, 350, 50, 150, 50, 500, 50, 250, 50, 250, 50, 250, 50, 250, 50,              # Third phrase
-        300, 50, 150, 50, 150, 50, 250, 50, 200, 50, 150, 50, 300, 50, 
-        150, 50, 350, 50, 1000, 50                                                           # Final notes
-    ]
-    
     def __init__(self, buzzer_pin=None):
-        """Initialize the buzzer controller.
-        
-        Args:
-            buzzer_pin: Pin number to use for buzzer. If None, uses pin from config.
-        """
+        """Initialize the buzzer controller."""
         if buzzer_pin is None:
             buzzer_pin = params.data["BUZZER_CONFIG"]["pin"]
-            
+
         self.pin = Pin(buzzer_pin)
         self.buzzer = PWM(self.pin)
-        self.buzzer.duty_u16(0)  # Start with buzzer off
-        
-        # Load configuration values
-        buzzer_config = params.data["BUZZER_CONFIG"]
-        self.tempo = buzzer_config.get("default_tempo", 1.0)  # Speed multiplier
-        self.volume = buzzer_config.get("default_volume", 0.5)  # Volume level 
-        self.r2d2_min_freq = buzzer_config.get("r2d2_min_freq", 1000)
-        self.r2d2_max_freq = buzzer_config.get("r2d2_max_freq", 4000)
-        self.r2d2_min_duration = buzzer_config.get("r2d2_min_duration", 40)
-        self.r2d2_max_duration = buzzer_config.get("r2d2_max_duration", 300)
-        
-        # State tracking
+        self.buzzer.duty_u16(0)
+
+        config = params.data["BUZZER_CONFIG"]
+        self.tempo = config.get("default_tempo", 1.0)
+        self.volume = config.get("default_volume", 0.5)
+
         self.playing = False
         self.current_task = None
-        
-        # Initialize with a test beep
-        self._play_beep()
-        
-    def _play_beep(self):
-        """Play a quick startup beep."""
-        self.buzzer.freq(params.data["BUZZER_CONFIG"]["frequency"])
-        self.buzzer.duty_u16(10000)  # About 15% volume
-        time.sleep_ms(100)
+
+        # Play a simple melody on startup
+        self.play_startup_melody()
+
+    def play_startup_melody(self):
+        # A simple melody like C5, E5, G5
+        simple_melody = ["NOTE_C5", 8, "NOTE_E5", 8, "NOTE_G5", 4]
+        self.play_melody_async(simple_melody, base_tempo=120)
+
+    async def _play_tone_async(self, freq, duration_ms):
+        if freq == 0:
+            self.buzzer.duty_u16(0)
+        else:
+            self.buzzer.freq(freq)
+            self.buzzer.duty_u16(int(65535 * self.volume))
+        await asyncio.sleep_ms(int(duration_ms))
         self.buzzer.duty_u16(0)
-        
-    def set_tempo(self, tempo):
-        """Set the tempo for Star Wars playback.
-        
-        Args:
-            tempo: Speed multiplier (0.5 = half speed, 2.0 = double speed)
-        """
-        self.tempo = max(0.2, min(3.0, tempo))
-        return self.tempo
-        
-    def set_volume(self, volume):
-        """Set the volume for sound playback.
-        
-        Args:
-            volume: Volume level from 0.0 (silent) to 1.0 (full volume)
-        """
-        self.volume = max(0.0, min(1.0, volume))
-        return self.volume
-    
-    def play_tone(self, frequency, duration_ms):
-        """Play a single tone (blocking).
-        
-        Args:
-            frequency: Frequency in Hz
-            duration_ms: Duration in milliseconds
-        """
-        if frequency > 0:
-            self.buzzer.freq(frequency)
-            volume = int(32767 * self.volume)
-            self.buzzer.duty_u16(volume)
-        else:
-            self.buzzer.duty_u16(0)  # No sound for frequency=0 (rest)
-            
-        time.sleep_ms(duration_ms)
-    
-    async def play_tone_async(self, frequency, duration_ms):
-        """Play a single tone asynchronously.
-        
-        Args:
-            frequency: Frequency in Hz
-            duration_ms: Duration in milliseconds
-        """
-        if frequency > 0:
-            self.buzzer.freq(frequency)
-            volume = int(32767 * self.volume)
-            self.buzzer.duty_u16(volume)
-        else:
-            self.buzzer.duty_u16(0)  # No sound for frequency=0 (rest)
-            
-        await asyncio.sleep_ms(duration_ms)
-    
-    async def _play_star_wars_task(self):
-        """Background task for playing the Star Wars Imperial March."""
+
+    async def _play_melody_async(self, melody, base_tempo):
         self.playing = True
-        
-        # Play the Imperial March
-        for i in range(0, len(self.IMPERIAL_MARCH_NOTES)):
-            # Check if we should stop early
+        wholenote = int((60000 * 4) / (base_tempo * self.tempo))
+
+        for i in range(0, len(melody), 2):
             if not self.playing:
                 break
-                
-            # Calculate tempo-adjusted duration
-            duration = int(self.IMPERIAL_MARCH_DURATIONS[i] / self.tempo)
-            await self.play_tone_async(self.IMPERIAL_MARCH_NOTES[i], duration)
-        
-        # Make sure we turn off the buzzer when done
+
+            note, duration = melody[i], melody[i + 1]
+            freq = NOTE_FREQ.get(note, 0)
+
+            if duration > 0:
+                note_duration = wholenote // duration
+            else:
+                note_duration = int(wholenote // abs(duration) * 1.5)
+
+            play_time = int(note_duration * 0.9)
+            await self._play_tone_async(freq, play_time)
+            await asyncio.sleep_ms(note_duration - play_time)
+
         self.buzzer.duty_u16(0)
         self.playing = False
-    
-    async def _play_r2d2_sounds_task(self, duration_seconds=5):
-        """Background task for playing random R2D2-like sounds.
-        
-        Args:
-            duration_seconds: Total duration to generate sounds for
-        """
-        self.playing = True
-        end_time = time.time() + duration_seconds
-        
-        while time.time() < end_time and self.playing:
-            # Random chirp with random characteristics
-            freq = urandom.randint(self.r2d2_min_freq, self.r2d2_max_freq)
-            duration = urandom.randint(self.r2d2_min_duration, self.r2d2_max_duration)
-            
-            # Play the tone
-            await self.play_tone_async(freq, duration)
-            
-            # Small gap between tones (sometimes)
-            if urandom.randint(0, 10) > 7:
-                await self.play_tone_async(0, urandom.randint(30, 100))
-                
-        # Make sure we turn off the buzzer when done
-        self.buzzer.duty_u16(0)
-        self.playing = False
-    
-    def play_star_wars_song(self):
-        """Play the Star Wars Imperial March theme in the background.
-        
-        This method is non-blocking and will return immediately.
-        """
-        self.stop()  # Stop any currently playing sounds
-        self.current_task = asyncio.create_task(self._play_star_wars_task())
-        return True
-    
-    async def play_star_wars_song_async(self):
-        """Play the Star Wars Imperial March theme asynchronously.
-        
-        This method returns a task that can be awaited to play the entire song.
-        """
-        self.stop()  # Stop any currently playing sounds
-        return await self._play_star_wars_task()
-    
-    def play_random_sound(self, duration_seconds=5):
-        """Play random R2D2-like sounds in the background.
-        
-        Args:
-            duration_seconds: Duration in seconds to generate sounds for
-            
-        This method is non-blocking and will return immediately.
-        """
-        self.stop()  # Stop any currently playing sounds
-        self.current_task = asyncio.create_task(
-            self._play_r2d2_sounds_task(duration_seconds)
-        )
-        return True
-    
-    async def play_random_sound_async(self, duration_seconds=5):
-        """Play random R2D2-like sounds asynchronously.
-        
-        Args:
-            duration_seconds: Duration in seconds to generate sounds for
-            
-        This method returns a task that can be awaited to play all sounds.
-        """
-        self.stop()  # Stop any currently playing sounds
-        return await self._play_r2d2_sounds_task(duration_seconds)
-    
+        self.current_task = None
+
+    def play_melody_async(self, melody, base_tempo=108):
+        if self.current_task is None or self.current_task.done():
+            self.current_task = asyncio.create_task(
+                self._play_melody_async(melody, base_tempo)
+            )
+
     def stop(self):
-        """Stop all sounds being played."""
         self.playing = False
         self.buzzer.duty_u16(0)
-        
-        # Cancel any running task
-        if self.current_task is not None:
-            try:
-                self.current_task.cancel()
-            except Exception as e:
-                print(f"Error canceling sound task: {e}")
-        
-        return True
-
-    def is_playing(self):
-        """Check if a sound is currently being played."""
-        return self.playing
-
-# Example usage (if run standalone)
-if __name__ == "__main__":
-    async def test_buzzer():
-        buzzer = BuzzerController()
-        
-        print("Playing Star Wars song...")
-        buzzer.play_star_wars_song()
-        await asyncio.sleep(5)  # Let it play for 5 seconds
-        
-        print("Stopping...")
-        buzzer.stop()
-        await asyncio.sleep(1)
-        
-        print("Playing R2D2 sounds...")
-        buzzer.play_random_sound(duration_seconds=3)
-        await asyncio.sleep(3)
-        
-        print("Done!")
-        buzzer.stop()
-    
-    # Run the test
-    asyncio.run(test_buzzer())

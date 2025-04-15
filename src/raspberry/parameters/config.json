@@ -59,11 +59,11 @@
     "measurement_interval_ms": 70
   },
   "BUZZER_CONFIG" : {
-    "pin": 18,
+    "pin": 0,
     "frequency": 440,
     "duration": 1000,
     "default_tempo": 2.0,
-    "default_volume": 0.5,
+    "default_volume": 1,
     "r2d2_min_freq": 1000,
     "r2d2_max_freq": 4000,
     "r2d2_min_duration": 40,

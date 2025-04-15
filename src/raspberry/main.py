@@ -8,7 +8,9 @@ from machine import Pin, I2C
 
 import asyncio
 from controllers.motor_controller import MotorController
-from controllers.buzzer_controller import BuzzerController  # Import the new buzzer controller
+from controllers.buzzer_controller import (
+    BuzzerController,
+)  # Import the new buzzer controller
 from bluethooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
 from parameters.parameters import (
@@ -43,7 +45,7 @@ class SelfBalancingRobot:
 
         # Use the Driving class from drive.py
         self.driver = Driving(self.motor_controller)
-        
+
         # Initialize buzzer controller
         self.buzzer = BuzzerController()
 
@@ -259,29 +261,31 @@ class SelfBalancingRobot:
             elif action == "CALIBRATE":
                 print("Starting calibration...")
                 self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
-                self.buzzer.play_star_wars_song()
-                
+                await self.buzzer.play_melody_async()
+
                 # Run the calibration
                 num_samples = data["MPU_CONFIG"]["calibration_samples"]
                 self.driver.mpu.calibrate_mpu(num_samples=num_samples)
-                
+
                 # Stop the music once calibration is complete
-                self.buzzer.stop()
-                
+                await self.buzzer.stop()
+
                 self.ble.send_telemetry(
                     f",M:Calibrated the gyro and accelerometer with {num_samples} samples!"
                 )
                 print("Calibration complete")
                 return
-                
+
             elif action == "SOUND":
                 print("Sound command received")
                 if len(parts) < 2:
-                    self.ble.send_telemetry(",M:Sound command requires a sound type (starwars, r2d2, stop)")
+                    self.ble.send_telemetry(
+                        ",M:Sound command requires a sound type (starwars, r2d2, stop)"
+                    )
                     return
-                
+
                 sound_type = parts[1].lower()
-                
+
                 # Optional tempo parameter
                 tempo = data["BUZZER_CONFIG"]["default_tempo"]
                 if len(parts) >= 3:
@@ -290,7 +294,7 @@ class SelfBalancingRobot:
                         self.buzzer.set_tempo(tempo)
                     except ValueError:
                         self.ble.send_telemetry(",M:Invalid tempo value, using default")
-                
+
                 # Optional volume parameter
                 volume = data["BUZZER_CONFIG"]["default_volume"]
                 if len(parts) >= 4:
@@ -298,12 +302,16 @@ class SelfBalancingRobot:
                         volume = float(parts[3])
                         self.buzzer.set_volume(volume)
                     except ValueError:
-                        self.ble.send_telemetry(",M:Invalid volume value, using default")
-                
+                        self.ble.send_telemetry(
+                            ",M:Invalid volume value, using default"
+                        )
+
                 # Process the sound command
                 if sound_type == "starwars":
                     self.buzzer.play_star_wars_song()
-                    self.ble.send_telemetry(f",M:Playing Star Wars theme (tempo={tempo})")
+                    self.ble.send_telemetry(
+                        f",M:Playing Star Wars theme (tempo={tempo})"
+                    )
                 elif sound_type == "r2d2":
                     # Extract optional duration
                     duration = 5
@@ -312,7 +320,7 @@ class SelfBalancingRobot:
                             duration = int(parts[4])
                         except ValueError:
                             pass
-                    
+
                     self.buzzer.play_random_sound(duration_seconds=duration)
                     self.ble.send_telemetry(f",M:Playing R2D2 sounds for {duration}s")
                 elif sound_type == "stop":
@@ -320,7 +328,7 @@ class SelfBalancingRobot:
                     self.ble.send_telemetry(",M:Stopped all sounds")
                 else:
                     self.ble.send_telemetry(f",M:Unknown sound type: {sound_type}")
-                    
+
                 return
 
             else:

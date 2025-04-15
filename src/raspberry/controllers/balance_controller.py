@@ -103,16 +103,16 @@ class Driving:
         # Calculate balance target:
         # - First term: Non-linear acceleration component that increases with speed
         # - Second term: Compensates for friction/drag forces
-        #self.balance_angle = (
+        # self.balance_angle = (
         #    1 + (self.k_torque_per_pw * current_speed) ** 2
-        #) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
+        # ) * self.k_acc * (target_speed - current_speed) + self.drag * target_speed
 
         # Add a component of stay still
         self.balance_angle = (
             params.data["PID_CONFIG"]["balance2offset"]
             * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count)
             / 2
-        ) 
+        )
 
     def balance(self, current_speed=0.0, target_speed=0.0):
         """Balance the robot without moving (stationary balancing)."""
@@ -126,7 +126,10 @@ class Driving:
         self.angle_data.append(current_angle)
         self.balance_angle_data.append(self.balance_angle)
         if len(self.angle_data) > 1:
-           self.balance_angle = self.balance_angle - (self.balance_angle - self.balance_angle_data[-2]) * self.k_damping
+            self.balance_angle = (
+                self.balance_angle
+                - (self.balance_angle - self.balance_angle_data[-2]) * self.k_damping
+            )
 
         self.balance_angle = max(
             -self.max_correction_tilt, min(self.max_correction_tilt, self.balance_angle)
