@@ -38,7 +38,7 @@ This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for l
 
 ## 🔌 Pinout Configuration
 
-<img src="assets/pinout.png" alt="Pinout Configuration" width="400"/>
+<img src="assets/pinout.png" alt="Pinout Configuration" width="800"/>
 
 | Component         | Signal/Function   | Pico GPIO |
 |-------------------|-------------------|-----------|
