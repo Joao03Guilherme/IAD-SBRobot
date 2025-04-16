@@ -9,6 +9,7 @@
 - [🧠 PID Control Theory](#-pid-control-theory)
 - [🧩 Software Architecture](#-software-architecture)
 - [⚙️ Setup and Configuration](#-setup-and-configuration)
+- [🎬 Demo](#-demo)
 
 ## 🚀 Project Overview
 
@@ -136,3 +137,21 @@ This architecture enables robust, real-time control while remaining easy to unde
 3. **Initial Configuration**:
    - Customize [`parameters/parameters.py`](src/raspberry/parameters/parameters.py) as needed for your specific hardware
    - Initial calibration is required before first use
+
+## 🎬 Demo
+
+<div align="center">
+
+<video width="600" controls>
+  <source src="assets/demo_baçancing.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+<br/>
+
+<div style="display: flex; justify-content: center; gap: 20px;">
+  <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350" style="margin:10px;"/>
+  <img src="assets/inside_bot.jpeg" alt="Internal components of the robot" width="350" style="margin:10px;"/>
+</div>
+
+</div>
