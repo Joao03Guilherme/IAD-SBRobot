@@ -40,6 +40,8 @@ This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for l
 
 <img src="assets/pinout.png" alt="Pinout Configuration" width="800"/>
 
+<div align="center">
+
 | Component         | Signal/Function   | Pico GPIO |
 |-------------------|-------------------|-----------|
 | Motor A (Left)    | IN1               | 2         |
@@ -53,6 +55,8 @@ This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for l
 | Left Encoder      | Signal            | 22        |
 | Right Encoder     | Signal            | 28        |
 | Buzzer            | Signal            | 0         |
+
+</div>
 
 ## 🧠 PID Control Theory
 
