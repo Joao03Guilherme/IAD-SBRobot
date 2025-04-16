@@ -142,7 +142,7 @@ This architecture enables robust, real-time control while remaining easy to unde
 
 <div align="center">
 
-https://github.com/user-attachments/assets/34d4b190-f3cc-48b9-b1b2-641a364e285a
+https://github.com/user-attachments/assets/decdff71-1c61-4fef-afbe-19137b25a101
 
 <div style="display: flex; justify-content: center; gap: 20px;">
   <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350" style="margin:10px;"/>
