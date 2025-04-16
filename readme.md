@@ -142,12 +142,7 @@ This architecture enables robust, real-time control while remaining easy to unde
 
 <div align="center">
 
-<video width="600" controls>
-  <source src="assets/demo_baçancing.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
-<br/>
+https://github.com/user-attachments/assets/34d4b190-f3cc-48b9-b1b2-641a364e285a
 
 <div style="display: flex; justify-content: center; gap: 20px;">
   <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350" style="margin:10px;"/>
@@ -155,3 +150,6 @@ This architecture enables robust, real-time control while remaining easy to unde
 </div>
 
 </div>
+
+
+
