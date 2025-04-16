@@ -1,17 +1,14 @@
 ![Project Banner](assets/banner.png)
 
 
-## Table of Contents
+## 🗂️ Table of Contents
 
-- [Project Overview](#-project-overview)
-- [Hardware Components](#-hardware-components)
-- [Pinout Configuration](#-pinout-configuration)
-- Software Architecture
-- Setup and Configuration
-- Usage Instructions
-- Parameter Tuning
-- Calibration
-- Troubleshooting
+- [🚀 Project Overview](#-project-overview)
+- [🛠️ Hardware Components](#-hardware-components)
+- [🔌 Pinout Configuration](#-pinout-configuration)
+- [🧠 PID Control Theory](#-pid-control-theory)
+- [🧩 Software Architecture](#-software-architecture)
+- [⚙️ Setup and Configuration](#-setup-and-configuration)
 
 ## 🚀 Project Overview
 
@@ -41,56 +38,88 @@ This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for l
 
 ## 🔌 Pinout Configuration
 
-![Pinout Configuration](assets/pinout.png)
+<img src="assets/pinout.png" alt="Pinout Configuration" width="400"/>
 
-### Motor Controller Pins
-```
-Motor A (Left):
-- IN1: GPIO 2
-- IN2: GPIO 3
-- ENA (PWM): GPIO 6
+| Component         | Signal/Function   | Pico GPIO |
+|-------------------|-------------------|-----------|
+| Motor A (Left)    | IN1               | 2         |
+| Motor A (Left)    | IN2               | 3         |
+| Motor A (Left)    | ENA (PWM)         | 6         |
+| Motor B (Right)   | IN3               | 4         |
+| Motor B (Right)   | IN4               | 5         |
+| Motor B (Right)   | ENB (PWM)         | 7         |
+| MPU6050           | SDA               | 26        |
+| MPU6050           | SCL               | 27        |
+| Left Encoder      | Signal            | 22        |
+| Right Encoder     | Signal            | 28        |
+| Buzzer            | Signal            | 0         |
 
-Motor B (Right):
-- IN3: GPIO 4
-- IN4: GPIO 5
-- ENB (PWM): GPIO 7
-```
+## 🧠 PID Control Theory
 
-### MPU6050 Sensor
-```
-- SDA: GPIO 26
-- SCL: GPIO 27
-```
+A PID (Proportional-Integral-Derivative) controller is a feedback mechanism widely used in control systems. It continuously calculates an error value as the difference between a desired setpoint and a measured process variable, applying corrections based on proportional, integral, and derivative terms:
 
-### Wheel Encoders
-```
-- Left Encoder: GPIO 22
-- Right Encoder: GPIO 28
-```
+- **Proportional (P):** Reacts to the current error. Higher values increase responsiveness but can cause overshoot.
+- **Integral (I):** Reacts to the accumulation of past errors. Helps eliminate steady-state error but can introduce instability if too high.
+- **Derivative (D):** Reacts to the rate of change of the error. Helps dampen oscillations and improve stability.
 
-### Status Indicator
-```
-- LED: Onboard LED (Pico)
-```
+In this robot, the PID controller processes the tilt angle from the IMU sensor to keep the robot balanced by adjusting the motor outputs in real time. Proper tuning of the PID gains is essential for stable and responsive balancing.
 
-## Software Architecture
+## 🧩 Software Architecture
 
-The codebase is organized into several modules:
+The codebase is organized into several modules, each with a clear responsibility to ensure modularity, maintainability, and ease of extension:
 
-- [`src/raspberry/main.py`](src/raspberry/main.py): Entry point and overall robot control
+- [`src/raspberry/main.py`](src/raspberry/main.py):
+  - **Entry point and main control loop.**
+  - Initializes all controllers, handles Bluetooth commands, telemetry, and orchestrates the robot's operation.
+
 - [`controllers/`](src/raspberry/controllers):
-  - [`gyroscope_controller.py`](src/raspberry/controllers/gyroscope_controller.py): MPU6050 interface and sensor fusion
-  - [`motor_controller.py`](src/raspberry/controllers/motor_controller.py): Motor control
-  - [`balance_controller.py`](src/raspberry/controllers/balance_controller.py): PID control and driving logic
-  - [`encoder_controller.py`](src/raspberry/controllers/encoder_controller.py): Speed measurement
-- `bluetooth/`:
-  - [`BLEReceiver.py`](src/raspberry/bluethooth/BLEReceiver.py): Bluetooth communication
-- [`parameters/`](src/raspberry/parameters):
-  - `parameters.py`: All system constants and configuration
-- `training/`:
-  - [`robot_interface.py`](src/raspberry/training/robot_interface.py): Interface for reinforcement learning
+  - [`gyroscope_controller.py`](src/raspberry/controllers/gyroscope_controller.py):
+    - Interfaces with the MPU6050 IMU to read angles and acceleration.
+    - Provides sensor fusion and filtering for accurate orientation estimation.
+  - [`motor_controller.py`](src/raspberry/controllers/motor_controller.py):
+    - Low-level control of the DC motors via the L298N driver.
+    - Supports PWM speed control and direction management.
+  - [`balance_controller.py`](src/raspberry/controllers/balance_controller.py):
+    - Implements the PID control loop for self-balancing.
+    - Contains driving logic for speed and turning, and safety checks for tilt.
+  - [`encoder_controller.py`](src/raspberry/controllers/encoder_controller.py):
+    - Reads wheel encoder pulses to measure speed and distance.
+    - Enables closed-loop speed control and odometry.
+  - [`buzzer_controller.py`](src/raspberry/controllers/buzzer_controller.py):
+    - Controls the passive buzzer for sound feedback.
+    - Supports playing melodies and sound effects asynchronously.
 
-## Setup and Configuration
+- [`bluetooth/`](src/raspberry/bluethooth):
+  - [`BLEReceiver.py`](src/raspberry/bluethooth/BLEReceiver.py):
+    - Handles Bluetooth Low Energy (BLE) communication.
+    - Receives commands and sends telemetry to a remote device.
+
+- [`parameters/`](src/raspberry/parameters):
+  - [`parameters.py`](src/raspberry/parameters/parameters.py):
+    - Central location for all system constants and configuration values.
+    - Includes PID gains, hardware pin mappings, and calibration data.
+
+- [`training/`](src/raspberry/training):
+  - [`robot_interface.py`](src/raspberry/training/robot_interface.py):
+    - Provides an interface for reinforcement learning experiments.
+    - Allows external agents to interact with the robot for training and evaluation.
+
+**Design Principles:**
+- **Modularity:** Each hardware component and control function is encapsulated in its own module.
+- **Asynchronous Operation:** Uses `asyncio` for concurrent tasks (e.g., BLE communication, telemetry, and control loops).
+- **Extensibility:** New sensors, actuators, or control strategies can be added with minimal changes to the main logic.
+- **Separation of Concerns:** Hardware abstraction, control logic, and communication are clearly separated for clarity and testability.
+
+**Typical Data Flow:**
+1. Sensor data (IMU, encoders) is read by controller modules.
+2. The balance controller computes motor commands using PID logic.
+3. Motor controller actuates the motors accordingly.
+4. BLEReceiver handles incoming commands and outgoing telemetry.
+5. Buzzer controller provides sound feedback for events and status.
+
+This architecture enables robust, real-time control while remaining easy to understand and modify for experimentation or educational purposes.
+
+## ⚙️ Setup and Configuration
 
 1. **Hardware Assembly**:
    - Connect components according to the pinout configuration
@@ -103,101 +132,3 @@ The codebase is organized into several modules:
 3. **Initial Configuration**:
    - Customize [`parameters/parameters.py`](src/raspberry/parameters/parameters.py) as needed for your specific hardware
    - Initial calibration is required before first use
-
-## Usage Instructions
-
-### Basic Operation
-
-1. **Power On**: Turn on the robot in a balanced position
-2. **Calibration**: Run the calibration procedure before first use
-3. **Balancing**: Start the balancing mode with the START command
-4. **Control**: Send movement commands (DRIVE) to move the robot
-
-### Command Interface
-
-Commands can be sent via Bluetooth:
-
-- `1`: START - Begin balancing
-- `2`: STOP - Stop motors
-- `3 <speed> <turn>`: DRIVE - Move with speed (-100 to 100) and turn (-100 to 100)
-- `5 <param> <value>`: CONFIG - Update parameter values
-- `6`: CALIBRATE - Calibrate sensors
-
-### Telemetry Data
-
-The robot outputs telemetry in this format:
-```
-A:<angle>,B:<balance_angle>,S:<speed>,T:<turn>,R:<running>,L:<left_power>,R:<right_power>
-```
-
-## Parameter Tuning
-
-### PID Controller Parameters
-
-- `KP`: Proportional gain (40-50 recommended)
-- `KI`: Integral gain (10-30 recommended)
-- `KD`: Derivative gain (30-90 recommended)
-- `K_DAMPING`: Dampens oscillations (0.8-1.2 recommended)
-
-### Balance Parameters
-
-- `MAX_SAFE_TILT`: Maximum allowed tilt angle before emergency stop
-- `BALANCE2OFFSET`: Fine adjustment for balance point
-- `MAX_CORRECTION_TILT`: Maximum correction angle
-
-### Speed Control Parameters
-
-- `K_ACCELERATION`: Controls acceleration response
-- `K_TORQUE_PER_PW`: Models how torque requirements change with speed
-- `DRAG`: Coefficient for friction compensation
-
-## Calibration
-
-1. Place the robot on a level surface
-2. Keep it completely still
-3. Run the CALIBRATE command
-4. Wait for calibration to complete (typically ~5 seconds)
-5. The robot will report calibration values
-
-The calibration process:
-- Determines gyroscope and accelerometer biases
-- Calculates the natural balance point
-
-## Troubleshooting
-
-### Robot Falls Forward/Backward
-
-- Adjust the `BALANCE2OFFSET` parameter
-- Verify MPU6050 mounting orientation
-- Re-calibrate on a level surface
-
-### Oscillations
-
-- Decrease `KP` and `KI` parameters
-- Increase `KD` parameter
-- Adjust `K_DAMPING` higher
-
-### Motors Not Responding
-
-- Check motor connections
-- Verify battery voltage (>7.2V recommended)
-- Ensure motor driver is receiving power
-
-### Poor Turning Performance
-
-- Adjust turning parameters in the PID controller
-- Check for mechanical issues in wheels
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Based on inverted pendulum control theory
-- Uses complementary filter for sensor fusion
-- Implements PID control for balance
-
-
-
-
