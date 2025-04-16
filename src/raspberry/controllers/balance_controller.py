@@ -15,8 +15,15 @@ import parameters.parameters as params
 class Driving:
     """A simple, self-balancing driving interface."""
 
-    def __init__(self, motor_controller=None):
-        """Set up sensor and balance parameters."""
+    def __init__(self, motor_controller: MotorController = None) -> None:
+        """
+        Initialize the Driving controller, setting up sensors, encoders, and balance parameters.
+
+        Args:
+            motor_controller (MotorController, optional): An instance of MotorController. If None, a new one is created from config.
+        Returns:
+            None
+        """
         # Initialize MPU and wheel encoder
         self.mpu = MPU6050()
         self.wheel_encoder_a = WheelEncoder(
@@ -73,8 +80,9 @@ class Driving:
         self.target_speed = 0  # Target speed to reach
         self.current_target = 0  # Current interpolated target speed
 
-    def set_balance_angle(self, current_speed=0.0, target_speed=0.0):
-        """Set the balance target angle based on current speed and target speed.
+    def set_balance_angle(self, current_speed: float = 0.0, target_speed: float = 0.0) -> None:
+        """
+        Set the balance target angle based on current speed and target speed.
 
         Args:
             current_speed: Current speed of the robot in m/s
@@ -114,8 +122,16 @@ class Driving:
             / 2
         )
 
-    def balance(self, current_speed=0.0, target_speed=0.0):
-        """Balance the robot without moving (stationary balancing)."""
+    def balance(self, current_speed: float = 0.0, target_speed: float = 0.0) -> tuple[float, float]:
+        """
+        Balance the robot without moving (stationary balancing).
+
+        Args:
+            current_speed (float): Current speed of the robot in m/s.
+            target_speed (float): Desired speed of the robot in m/s.
+        Returns:
+            tuple[float, float]: (current_angle, balance_power)
+        """
         # Get current angle using both gyro and accelerometer for better accuracy
         current_angle = self.mpu.get_current_angle()
 
@@ -172,22 +188,22 @@ class Driving:
 
         return current_angle, balance_power
 
-    def forward(self, target_speed=0, turn_bias=0):
-        """Balance and move with optional turning.
+    def forward(self, target_speed: int = 0, turn_bias: int = 0) -> tuple[float, float, float, float, float]:
+        """
+        Balance and move with optional turning.
+
         Args:
-            speed: Forward speed (-100 to 100)
-            turn_bias: Turning bias (-100 to 100), positive turns right
+            target_speed (int): Forward speed (-100 to 100).
+            turn_bias (int): Turning bias (-100 to 100), positive turns right.
         Returns:
-            (current_angle, left_power, right_power, current_speed, current_acceleration)
+            tuple[float, float, float, float, float]: (current_angle, left_power, right_power, current_speed, current_acceleration)
         """
         current_speed = (
             self.wheel_encoder_a.get_speed() + self.wheel_encoder_b.get_speed()
         ) / 2
 
         # Use the balance method with smoothed target speed
-        current_angle, driving_power = self.balance(
-            current_speed=0, target_speed=0
-        )
+        current_angle, driving_power = self.balance(current_speed=0, target_speed=0)
 
         # Set direction for wheel encoder based on current target
         if self.current_target > 0:
@@ -276,19 +292,28 @@ class Driving:
             current_acceleration,
         )
 
-    def stop(self):
-        """Stop both motors."""
+    def stop(self) -> tuple[float, int, int]:
+        """
+        Stop both motors and reset error sum and direction.
+
+        Returns:
+            tuple[float, int, int]: (gyro_angle, 0, 0)
+        """
         self.motors.stop()
         self.error_sum = 0
         self.direction = 0
         gyro_angle = self.mpu.get_current_angle()
         return gyro_angle, 0, 0
 
-    def turn(self, angle=90, direction=1):
-        """Turn approximately by the specified angle.
+    def turn(self, angle: int = 90, direction: int = 1) -> tuple[float, int, int]:
+        """
+        Turn approximately by the specified angle.
+
         Args:
-            angle: Angle to turn in degrees (positive)
-            direction: 1 for right, -1 for left
+            angle (int): Angle to turn in degrees (positive).
+            direction (int): 1 for right, -1 for left.
+        Returns:
+            tuple[float, int, int]: (gyro_angle, 0, 0) after turning.
         """
         print(f"Turning {angle}° {'right' if direction > 0 else 'left'}")
 

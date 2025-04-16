@@ -2,8 +2,9 @@ from machine import Pin, PWM
 import parameters.parameters as params
 import asyncio
 
+
 class BuzzerController:
-    # Notes definition (same as Arduino's frequency table)
+    # Notes definition 
     NOTE_FREQ = {
         "REST": 0,
         "NOTE_B0": 31,
@@ -126,7 +127,6 @@ class BuzzerController:
 
         self.pin = Pin(buzzer_pin)
         self.buzzer = PWM(self.pin)
-        # Make sure PWM is configured with a default frequency
         self.buzzer.freq(1000)  # Initialize with 1kHz
         self.buzzer.duty_u16(0)  # Start with duty cycle at 0
 
@@ -141,95 +141,105 @@ class BuzzerController:
         # Play a short beep on startup and start periodic beeping
         self.start_periodic_beeping()
 
-    def play_startup_melody(self):
-        # Just a single short beep instead of a melody
-        simple_beep = ["NOTE_C5", 16]
-        self.play_melody_async(simple_beep, base_tempo=120)
-
     async def _play_tone_async(self, freq, duration_ms):
         if freq == 0:
-            # For rests, just stop sound but don't change frequency
-            self.buzzer.duty_u16(0)
+            self.buzzer.duty_u16(0)  # Rest
         else:
-            # Configure the frequency first
             self.buzzer.freq(freq)
-            # Then set duty cycle to 50% for cleaner tone (fixed volume)
             # Using 50% duty cycle (32767) works better for square wave output
             # We multiply by volume to allow volume control
             duty = int(32767 * self.volume)
             self.buzzer.duty_u16(duty)
-            
-        # Wait for the specified duration
-        await asyncio.sleep_ms(int(duration_ms))
-        
-        # Don't stop sounds between notes in a melody
-        # We'll let the next note change it instead
 
-    async def _periodic_beep_task(self):
-        """Task that beeps once every 2 seconds"""
+        await asyncio.sleep_ms(int(duration_ms))
+
+    async def _periodic_beep_task(self) -> None:
+        """
+        Asynchronous task that beeps once every 2 seconds.
+        Plays a short beep, then waits for 2 seconds before repeating.
+        Ensures the buzzer is turned off when the task is stopped.
+        
+        Args:
+            None
+        Returns:
+            None
+        """
         self.periodic_beeping = True
         while self.periodic_beeping:
-            # Play a short beep
             await self._play_tone_async(self.NOTE_FREQ["NOTE_C5"], 100)
-            # Turn off buzzer after beep
             self.buzzer.duty_u16(0)
-            # Wait for 2 seconds before next beep
             await asyncio.sleep(2)
-        
-        # Ensure buzzer is off when stopping
         self.buzzer.duty_u16(0)
 
-    def start_periodic_beeping(self):
-        """Start a periodic beep every 2 seconds"""
-        # Cancel any existing task
+    def start_periodic_beeping(self) -> asyncio.Task:
+        """
+        Start a periodic beep every 2 seconds.
+        Cancels any existing periodic beep task before starting a new one.
+        
+        Args:
+            None
+        Returns:
+            asyncio.Task: The task object for the periodic beeping.
+        """
         if self.current_task is not None and not self.current_task.done():
             self.stop_periodic_beeping()
-        
-        # Start new periodic beeping task
         self.current_task = asyncio.create_task(self._periodic_beep_task())
         return self.current_task
 
-    def stop_periodic_beeping(self):
-        """Stop the periodic beeping"""
+    def stop_periodic_beeping(self) -> asyncio.Task:
+        """
+        Stop the periodic beeping task.
+        Sets the periodic_beeping flag to False and schedules the buzzer to stop.
+        
+        Args:
+            None
+        Returns:
+            asyncio.Task: The task object for stopping the buzzer.
+        """
         self.periodic_beeping = False
-        # Allow task to complete gracefully
         return asyncio.create_task(self.stop())
 
-    async def _play_melody_async(self, melody, base_tempo):
+    async def _play_melody_async(self, melody: list[str|int], base_tempo: int) -> None:
+        """
+        Play a melody asynchronously.
+        
+        Args:
+            melody (list[str|int]): A list of notes and their durations.
+            base_tempo (int): The base tempo for the melody.
+        Returns:
+            None
+        """
         self.playing = True
         wholenote = int((60000 * 4) / (base_tempo * self.tempo))
-
         for i in range(0, len(melody), 2):
             if not self.playing:
                 break
-
             note, duration = melody[i], melody[i + 1]
             freq = self.NOTE_FREQ.get(note, 0)
-
             if duration > 0:
                 note_duration = wholenote // duration
             else:
                 note_duration = int(wholenote // abs(duration) * 1.5)
-
-            # Calculate the actual play time for each note
-            # Use 90% of the note's duration for the note, and 10% for silence
             play_time = int(note_duration * 0.9)
-            
             await self._play_tone_async(freq, play_time)
-            
-            # Brief silence between notes for articulation
             self.buzzer.duty_u16(0)
             await asyncio.sleep_ms(note_duration - play_time)
-
-        # Make sure to turn off the buzzer when we're done
         self.buzzer.duty_u16(0)
         self.playing = False
         self.current_task = None
 
-    def play_melody_async(self, melody=None, base_tempo=108):
+    def play_melody_async(self, melody: list[str|int]=None, base_tempo: int=108) -> asyncio.Task:
+        """
+        Play a melody asynchronously. Wrapper for the _play_melody_async method.
+        
+        Args:
+            melody (list[str|int], optional): A list of notes and their durations. Defaults to Star Wars melody.
+            base_tempo (int, optional): The base tempo for the melody. Defaults to 108.
+        Returns:
+            asyncio.Task: The task object for the melody playback.
+        """
         if melody is None:
             melody = self.star_wars_melody
-            
         if self.current_task is None or self.current_task.done():
             self.current_task = asyncio.create_task(
                 self._play_melody_async(melody, base_tempo)
@@ -237,54 +247,81 @@ class BuzzerController:
             return self.current_task
         return self.current_task
 
-    async def stop(self):
+    async def stop(self) -> None:
+        """
+        Stops all melody playback and periodic beeping.
+        
+        Args:
+            None
+        Returns:
+            None
+        """
         self.playing = False
         self.periodic_beeping = False
         self.buzzer.duty_u16(0)
-        # Wait for the current task to complete if it exists
         if self.current_task and not self.current_task.done():
             try:
                 self.current_task.cancel()
-                await asyncio.sleep(0.1)  # Give task time to cancel
+                await asyncio.sleep(0.1)
             except Exception:
                 pass
 
-    def set_tempo(self, tempo):
-        """Set the tempo multiplier for melody playback."""
+    def set_tempo(self, tempo: float) -> bool:
+        """
+        Set the tempo multiplier for melody playback.
+        
+        Args:
+            tempo (float): The tempo multiplier (1.0 is normal speed).
+        Returns:
+            bool: True if the tempo was set successfully, False otherwise.
+        """
         self.tempo = float(tempo)
         return True
 
-    def set_volume(self, volume):
-        """Set the volume level (0.0 to 1.0)."""
-        # Make sure volume is between 0 and 1
+    def set_volume(self, volume: float) -> bool:
+        """
+        Set the volume level (0.0 to 1.0).
+        
+        Args:
+            volume (float): The volume level (0.0 to 1.0).
+        Returns:
+            bool: True if the volume was set successfully, False otherwise.
+        """
         self.volume = max(0.0, min(1.0, float(volume)))
         print(f"Volume set to {self.volume}")
         return True
 
-    def play_star_wars_song(self):
-        """Play the Star Wars theme song."""
+    def play_star_wars_song(self) -> asyncio.Task:
+        """
+        Play the Star Wars theme song.
+        
+        Args:
+            None
+        Returns:
+            asyncio.Task: The task object for the melody playback.
+        """
         return self.play_melody_async(self.star_wars_melody, base_tempo=108)
 
-    def play_random_sound(self, duration_seconds=5):
-        """Play random R2D2-like beeps and boops."""
+    def play_random_sound(self, duration_seconds: int=5) -> asyncio.Task:
+        """
+        Play random R2D2-like beeps and boops.
+        
+        Args:
+            duration_seconds (int, optional): Duration of the random sound in seconds. Defaults to 5.
+        Returns:
+            asyncio.Task: The task object for the melody playback.
+        """
         import random
-        
-        # Create a random melody that sounds like R2D2
         r2d2_melody = []
-        notes = ["NOTE_C6", "NOTE_D6", "NOTE_E6", "NOTE_F6", "NOTE_G6", "NOTE_A6", "NOTE_B6", "NOTE_C7"]
+        notes = [
+            "NOTE_C6", "NOTE_D6", "NOTE_E6", "NOTE_F6", "NOTE_G6", "NOTE_A6", "NOTE_B6", "NOTE_C7",
+        ]
         durations = [8, 16, 4, 2]
-        
-        # Calculate how many notes to generate based on duration
-        # A typical note might be 100-200ms, so roughly 10 notes per second
         num_notes = duration_seconds * 10
-        
         for _ in range(int(num_notes)):
             note = random.choice(notes)
             duration = random.choice(durations)
             r2d2_melody.extend([note, duration])
-            
-            # Occasionally add a rest
             if random.random() < 0.2:
                 r2d2_melody.extend(["REST", duration])
-        
         return self.play_melody_async(r2d2_melody, base_tempo=180)

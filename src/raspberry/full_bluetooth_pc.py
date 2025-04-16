@@ -10,14 +10,20 @@ THIS CODE SHOULD BE RAN IN THE PC
 """
 
 COMMANDS = params.data["COMMANDS"]
-input_queue = queue.Queue()
+input_queue: queue.Queue[str] = queue.Queue()
 
-
-def get_user_input():
-    """Function to run in a separate thread to get user input"""
+def get_user_input() -> None:
+    """
+    Function to run in a separate thread to get user input from the terminal and put it in a queue.
+    
+    Args:
+        None
+    Returns:
+        None
+    """
     while True:
         print("=" * 100)
-        user_input = input("\nEnter command: ")
+        user_input: str = input("\nEnter command: ")
         input_queue.put(user_input)
         # Wait a bit before checking for new input
         time.sleep(0.1)
@@ -25,9 +31,15 @@ def get_user_input():
         if user_input.lower() == "q":
             break
 
-
-async def interactive_mode(controller):
-    """Interactive mode to send commands to PicoRobot"""
+async def interactive_mode(controller: BLEEmitter) -> None:
+    """
+    Interactive mode to send commands to PicoRobot. Starts a thread for user input and processes commands from the queue.
+    
+    Args:
+        controller (BLEEmitter): The BLEEmitter instance for communication.
+    Returns:
+        None
+    """
     # Start a separate thread for user input
     input_thread = threading.Thread(target=get_user_input, daemon=True)
     input_thread.start()
@@ -45,8 +57,8 @@ async def interactive_mode(controller):
         # Check if we have input without blocking
         try:
             # Non-blocking get with a short timeout
-            choice = input_queue.get(block=False)
-            size = len(choice.split(" "))
+            choice: str = input_queue.get(block=False)
+            size: int = len(choice.split(" "))
 
             if size == 3:
                 choice, arg1, arg2 = choice.split(" ")
@@ -60,9 +72,9 @@ async def interactive_mode(controller):
 
             # Send the command as-is (the robot will parse it)
             if size == 3:
-                command = f"{choice} {arg1} {arg2}"
+                command: str = f"{choice} {arg1} {arg2}"
             else:
-                command = choice
+                command: str = choice
 
             await controller.send_command(command)
 
@@ -73,11 +85,18 @@ async def interactive_mode(controller):
         # Allow other asyncio tasks to run (like processing BLE notifications)
         await asyncio.sleep(0.1)
 
-
-async def main():
-    """Main function"""
+async def main() -> None:
+    """
+    Main function to create the BLEEmitter, connect to the robot, and run interactive mode.
+    Ensures proper disconnection on exit.
+    
+    Args:
+        None
+    Returns:
+        None
+    """
     # Create controller object with telemetry printing disabled
-    controller = BLEEmitter(verbose_telemetry=False)
+    controller: BLEEmitter = BLEEmitter(verbose_telemetry=False)
 
     try:
         # Try to connect
@@ -88,7 +107,6 @@ async def main():
     finally:
         # Always disconnect properly
         await controller.disconnect()
-
 
 # Run the main function
 if __name__ == "__main__":

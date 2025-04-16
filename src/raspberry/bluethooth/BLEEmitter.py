@@ -16,10 +16,18 @@ from typing import Deque
 class BLEEmitter:
     def __init__(
         self,
-        device_address=None,
-        device_name=params.data["PICO_NAME"],
-        verbose_telemetry=True,
-    ):
+        device_address: str = None,
+        device_name: str = params.data["PICO_NAME"],
+        verbose_telemetry: bool = True,
+    ) -> None:
+        """
+        Initialize the BLEEmitter for communicating with the PicoRobot.
+
+        Args:
+            device_address (str, optional): Bluetooth address of the device. Defaults to None.
+            device_name (str, optional): Name of the device to connect to. Defaults to value from config.
+            verbose_telemetry (bool, optional): Whether to print detailed telemetry. Defaults to True.
+        """
         self.device_address = device_address
         self.device_name = device_name
         self.client = None
@@ -28,8 +36,13 @@ class BLEEmitter:
         self.balance_angle_buffer: Deque[float] = deque(maxlen=100)
         self.plot_initialized = False
 
-    async def connect(self):
-        """Connect to the PicoRobot"""
+    async def connect(self) -> bool:
+        """
+        Connect to the PicoRobot via BLE. If no address is specified, scans for the device by name.
+
+        Returns:
+            bool: True if connection is successful, False otherwise.
+        """
         # If no address specified, try to find by name
         if not self.device_address:
             print(f"Scanning for {self.device_name}...")
@@ -69,8 +82,13 @@ class BLEEmitter:
             print(f"Error connecting: {e}")
             return False
 
-    async def disconnect(self):
-        """Disconnect from the device"""
+    async def disconnect(self) -> None:
+        """
+        Disconnect from the PicoRobot and stop telemetry notifications and plotting.
+
+        Returns:
+            None
+        """
         # Stop the plot thread
         if hasattr(self, "plot_running"):
             self.plot_running = False
@@ -85,8 +103,15 @@ class BLEEmitter:
             await self.client.disconnect()
             print("Disconnected")
 
-    async def send_command(self, command):
-        """Send a command to the PicoRobot"""
+    async def send_command(self, command: str | bytes) -> bool:
+        """
+        Send a command to the PicoRobot over BLE.
+
+        Args:
+            command (str | bytes): The command to send (as string or bytes).
+        Returns:
+            bool: True if the command was sent successfully, False otherwise.
+        """
         if not self.client or not self.client.is_connected:
             print("Not connected!")
             return False
@@ -106,8 +131,16 @@ class BLEEmitter:
             print(f"Error sending command: {e}")
             return False
 
-    def _on_telemetry(self, sender, data):
-        """Handle telemetry data"""
+    def _on_telemetry(self, sender: int, data: bytes) -> None:
+        """
+        Handle incoming telemetry data from the PicoRobot.
+
+        Args:
+            sender (int): The sender handle.
+            data (bytes): The telemetry data received.
+        Returns:
+            None
+        """
         try:
             # Decode the data as a formatted string
             decoded = data.decode()
@@ -166,8 +199,13 @@ class BLEEmitter:
             if self.verbose_telemetry:
                 print(f"📊 Raw telemetry: {data}")
 
-    def start_angle_plot(self):
-        """Start a rolling plot for the angle value in a separate thread."""
+    def start_angle_plot(self) -> None:
+        """
+        Start a rolling plot for the angle value in a separate thread.
+
+        Returns:
+            None
+        """
         if self.plot_initialized:
             return
 
@@ -179,8 +217,13 @@ class BLEEmitter:
         plot_thread.daemon = True  # Thread will exit when main program exits
         plot_thread.start()
 
-    def _run_plot_thread(self):
-        """Run the plot in a separate thread."""
+    def _run_plot_thread(self) -> None:
+        """
+        Run the matplotlib plot in a separate thread, updating with new angle and balance data.
+
+        Returns:
+            None
+        """
         plt.ion()  # Enable interactive mode
         self.fig, self.ax = plt.subplots(figsize=(8, 5))
 

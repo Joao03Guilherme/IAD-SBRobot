@@ -17,8 +17,13 @@ _IRQ_GATTS_WRITE = 3
 
 
 class BLEReceiver:
-    def __init__(self, name=params.data["PICO_NAME"]):
-        """Initialize the BLE controller with device name"""
+    def __init__(self, name: str = params.data["PICO_NAME"]) -> None:
+        """
+        Initialize the BLE controller with the given device name.
+
+        Args:
+            name (str, optional): The BLE device name. Defaults to value from config.
+        """
         self.name = name
         self.ble = bluetooth.BLE()
         self.ble.active(True)
@@ -41,8 +46,13 @@ class BLEReceiver:
 
         print(f"BLE initialized as '{name}'")
 
-    def _register_services(self):
-        """Register BLE services and characteristics"""
+    def _register_services(self) -> None:
+        """
+        Register BLE services and characteristics for control and telemetry.
+
+        Returns:
+            None
+        """
         # Define UUIDs for service and characteristics
         ROBOT_SERVICE_UUID = bluetooth.UUID(params.data["ROBOT_SERVICE_UUID"])
         CONTROL_CHAR_UUID = bluetooth.UUID(params.data["CONTROL_CHAR_UUID"])
@@ -70,8 +80,13 @@ class BLEReceiver:
 
         print("Services registered successfully")
 
-    def _advertise(self):
-        """Start BLE advertising"""
+    def _advertise(self) -> None:
+        """
+        Start BLE advertising with the device name.
+
+        Returns:
+            None
+        """
         # Prepare advertising payload with name
         payload = bytearray()
 
@@ -86,8 +101,16 @@ class BLEReceiver:
         self.ble.gap_advertise(100000, adv_data=payload)
         print("Advertising started")
 
-    def _irq_handler(self, event, data):
-        """Handle BLE events"""
+    def _irq_handler(self, event: int, data) -> None:
+        """
+        Handle BLE events (connect, disconnect, write).
+
+        Args:
+            event (int): The BLE event type.
+            data: Event-specific data.
+        Returns:
+            None
+        """
         # Connection event
         print(f"BLE event received: {event}")  #  this to track all events
 
@@ -129,11 +152,14 @@ class BLEReceiver:
                     # Fallback for binary data
                     print(f"Binary data received: {data_bytes}")
 
-    def send_telemetry(self, data):
-        """Send telemetry data to connected device
+    def send_telemetry(self, data: dict | str) -> bool:
+        """
+        Send telemetry data to the connected device.
 
         Args:
-            data: Dictionary or string to send
+            data (dict | str): Dictionary or string to send as telemetry.
+        Returns:
+            bool: True if telemetry was sent, False otherwise.
         """
         if not self.connected:
             return False
@@ -157,10 +183,13 @@ class BLEReceiver:
             print(f"Error sending telemetry: {e}")
             return False
 
-    def set_command_callback(self, callback):
-        """Set callback function for received commands
+    def set_command_callback(self, callback) -> None:
+        """
+        Set the callback function for received commands.
 
         Args:
-            callback: Function that takes command string as parameter
+            callback: Function that takes a command string as parameter.
+        Returns:
+            None
         """
         self.command_callback = callback

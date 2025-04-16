@@ -36,9 +36,17 @@ status_led = Pin("LED", Pin.OUT)
 
 
 class SelfBalancingRobot:
-    """Main robot control class."""
+    """
+    Main robot control class for the self-balancing robot.
+    Handles motor, buzzer, BLE, and driving logic.
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize the SelfBalancingRobot, setting up controllers and BLE.
+        Returns:
+            None
+        """
         print("Initializing Self-Balancing Robot...")
 
         # Create motor controller first
@@ -62,8 +70,13 @@ class SelfBalancingRobot:
         self.speed = 0
         self.turn = 0
 
-    async def ble_listener(self):
-        """Listen for BLE commands and handle them."""
+    async def ble_listener(self) -> None:
+        """
+        Listen for BLE commands and handle them.
+        Starts/stops periodic beeping based on BLE connection status.
+        Returns:
+            None
+        """
         while True:
             if self.ble.connected:
                 # Stop the periodic beeping once connection is established
@@ -78,13 +91,22 @@ class SelfBalancingRobot:
                     self.buzzer.start_periodic_beeping()
                 await asyncio.sleep(0.5)  # Check less frequently when disconnected
 
-    async def start(self):
-        """Start the balancing loop."""
+    async def start(self) -> None:
+        """
+        Start the balancing loop and BLE listener concurrently.
+        Returns:
+            None
+        """
         self.running = True
         await asyncio.gather(self.main_loop(), self.ble_listener())
 
-    async def reset(self):
-        """Rest the Driving class."""
+    async def reset(self) -> None:
+        """
+        Reset the Driving class and stop the robot.
+        Sends telemetry about the reset.
+        Returns:
+            None
+        """
         self.running = False
         self.driver.stop()
         self.motor_controller = MotorController(MOTOR_CONFIG)
@@ -93,8 +115,15 @@ class SelfBalancingRobot:
         self.ble.send_telemetry(",M:Robot stopped and reset")
         self.ble.send_telemetry(f",C{str(data['PID_CONFIG'])}")
 
-    def _update_config(self, param, value):
-        """Update robot configuration parameters."""
+    def _update_config(self, param: str, value: float) -> None:
+        """
+        Update robot configuration parameters.
+        Args:
+            param (str): The parameter name to update.
+            value (float): The new value for the parameter.
+        Returns:
+            None
+        """
         param = param.upper()
         print(f"DEBUG: Starting _update_config with param={param}, value={value}")
 
@@ -149,8 +178,13 @@ class SelfBalancingRobot:
             if self.ble.connected:
                 self.ble.send_telemetry(f",M:ERROR: {error_msg}")
 
-    def send_telemetry(self):
-        """Send robot telemetry data via BLE."""
+    def send_telemetry(self) -> None:
+        """
+        Send robot telemetry data via BLE.
+        Includes angle, balance angle, speed, turn, running state, and power data.
+        Returns:
+            None
+        """
         if not self.ble.connected:
             return
 
@@ -171,10 +205,13 @@ class SelfBalancingRobot:
         # Send telemetry
         self.ble.send_telemetry(telemetry)
 
-    def find_balance_point(self):
-        """Utility function to find the natural balance point of the robot.
-        This helps determine the optimal balance_angle value."""
-
+    def find_balance_point(self) -> float | None:
+        """
+        Utility function to find the natural balance point of the robot.
+        This helps determine the optimal balance_angle value.
+        Returns:
+            float | None: The average balance angle, or None if no samples collected.
+        """
         print("Finding balance point. Place the robot upright and keep it still...")
 
         samples = []
@@ -197,8 +234,14 @@ class SelfBalancingRobot:
             print("Error: No samples collected")
             return None
 
-    async def handle_command(self, cmd):
-        """Process BLE commands."""
+    async def handle_command(self, cmd: str | bytes) -> None:
+        """
+        Process BLE commands.
+        Args:
+            cmd (str | bytes): The command received from BLE.
+        Returns:
+            None
+        """
         # Make sure cmd is a string
         if isinstance(cmd, bytes):
             cmd = cmd.decode("utf-8")
@@ -214,32 +257,32 @@ class SelfBalancingRobot:
         # Handle numeric commands (like "1" or "2")
         parts = cmd.split(" ")
         cmd_num = parts[0]
-        
+
         # Add debug print to see if command even reaches here
         print(f"DEBUG: Processing command num '{cmd_num}' from parts {parts}")
-        
+
         # Make sure "7" is properly recognized as a SOUND command
         if cmd_num == "7":
             print("SOUND command detected via '7'")
-            
+
             # If no sound type provided, show error
             if len(parts) < 2:
                 error_msg = "Sound command requires a sound type (starwars, r2d2, stop)"
                 print(error_msg)
                 self.ble.send_telemetry(f",M:{error_msg}")
                 return
-                
+
             # Get sound type and set default parameters
             sound_type = parts[1].lower()
             print(f"Playing sound: {sound_type}")
-            
+
             # Set default parameters
             tempo = data["BUZZER_CONFIG"]["default_tempo"]
             volume = data["BUZZER_CONFIG"]["default_volume"]
-            
+
             # Set volume to maximum for better audibility
             self.buzzer.set_volume(1.0)
-            
+
             # Process sound type
             if sound_type == "starwars":
                 self.buzzer.play_star_wars_song()
@@ -253,7 +296,7 @@ class SelfBalancingRobot:
                 self.ble.send_telemetry(",M:Stopped all sounds")
             else:
                 self.ble.send_telemetry(f",M:Unknown sound type: {sound_type}")
-            
+
             return
 
         # Continue with the normal command handling
@@ -314,20 +357,22 @@ class SelfBalancingRobot:
             elif action == "CALIBRATE":
                 print("Starting calibration...")
                 self.ble.send_telemetry(",M:Calibrating gyro and accelerometer...")
-                
+
                 # Make sure volume is at maximum
                 self.buzzer.set_volume(1.0)
                 print("Starting calibration melody")
-                
+
                 # Create a simpler repeating melody that's easier to hear
                 calibration_melody = self.buzzer.star_wars_melody * 2
-                
+
                 # Start the melody playing in a background task
-                melody_task = self.buzzer.play_melody_async(calibration_melody, base_tempo=100)
-                
+                melody_task = self.buzzer.play_melody_async(
+                    calibration_melody, base_tempo=100
+                )
+
                 # Create a flag to track calibration completion
                 calibration_done = False
-                
+
                 # Define a function to run calibration in a separate thread
                 def run_calibration():
                     nonlocal calibration_done
@@ -340,19 +385,19 @@ class SelfBalancingRobot:
                     except Exception as e:
                         print(f"Error in calibration thread: {e}")
                         calibration_done = True
-                
+
                 # Start calibration in a separate thread
                 _thread.start_new_thread(run_calibration, ())
-                
+
                 # Wait for calibration to complete while allowing the event loop to run
                 print("Waiting for calibration to complete...")
                 while not calibration_done:
                     await asyncio.sleep(0.1)  # Yield to event loop regularly
-                
+
                 print("Calibration complete - stopping melody")
                 # Stop the melody now that calibration is done
                 await self.buzzer.stop()
-                
+
                 # Notify user
                 num_samples = data["MPU_CONFIG"]["calibration_samples"]
                 self.ble.send_telemetry(
@@ -363,7 +408,9 @@ class SelfBalancingRobot:
             elif action == "SOUND":
                 print("Sound command received via COMMANDS dictionary")
                 if len(parts) < 2:
-                    print("Error: SOUND command requires a sound type (starwars, r2d2, stop)")
+                    print(
+                        "Error: SOUND command requires a sound type (starwars, r2d2, stop)"
+                    )
                     self.ble.send_telemetry(f",M:Sound command requires a sound type")
                     return
 
@@ -374,8 +421,13 @@ class SelfBalancingRobot:
         # If we get here, it's an unrecognized command
         print(f"Unknown command: {cmd}")
 
-    async def main_loop(self):
-        """Main control loop."""
+    async def main_loop(self) -> None:
+        """
+        Main control loop for balancing and driving.
+        Sends telemetry and checks for safety conditions.
+        Returns:
+            None
+        """
         last_telemetry_time = 0
         self.speed = 0
         self.turn = 0
@@ -420,8 +472,14 @@ class SelfBalancingRobot:
             print("Robot stopped")
 
 
-async def main():
-    """Program entry point."""
+async def main() -> None:
+    """
+    Program entry point.
+    Initializes the robot and runs the BLE listener and telemetry loop.
+    Handles graceful shutdown on KeyboardInterrupt.
+    Returns:
+        None
+    """
     robot = SelfBalancingRobot()
 
     # Start the BLE listener immediately

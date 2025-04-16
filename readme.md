@@ -1,14 +1,11 @@
-# Self-Balancing Robot
+![Project Banner](assets/banner.png)
 
-![Project Banner]()
-
-A self-balancing robot using Raspberry Pi Pico, MPU6050, and DC motors with encoders. This project implements PID control for balance and reinforcement learning capabilities for parameter optimization.
 
 ## Table of Contents
 
-- Project Overview
-- Hardware Components
-- Pinout Configuration
+- [Project Overview](#-project-overview)
+- [Hardware Components](#-hardware-components)
+- [Pinout Configuration](#-pinout-configuration)
 - Software Architecture
 - Setup and Configuration
 - Usage Instructions
@@ -16,32 +13,33 @@ A self-balancing robot using Raspberry Pi Pico, MPU6050, and DC motors with enco
 - Calibration
 - Troubleshooting
 
-## Project Overview
+## 🚀 Project Overview
 
-This self-balancing robot uses an inverted pendulum approach to maintain balance. It combines:
+This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for learning, experimentation, and fun, it brings together real-time control, multiple sensors and wireless communication in a compact robotics package.
 
-- Sensor fusion for accurate angle measurement
-- PID control for balance maintenance
-- Speed and turn control for navigation
-- Bluetooth communication for remote control and telemetry
-- Optional reinforcement learning for parameter optimization
+**Key Features:**
+- **Real-Time Balancing:** Uses an MPU6050 IMU and a robust PID controller to keep the robot upright.
+- **Modular Architecture:** Clean separation of motor, sensor, control, and communication logic for easy extension and maintenance.
+- **Bluetooth Remote Control:** Drive, tune, and calibrate your robot wirelessly via a simple command interface.
+- **Live Parameter Tuning:** Adjust PID and balance parameters on the fly for rapid experimentation.
+- **Sound & Feedback:** Play melodies (like the Star Wars theme!) and R2D2-style sounds with the onboard buzzer for interactive feedback.
+- **Educational Focus:** Ideal for exploring robotics, control systems, and embedded programming.
 
-## Hardware Components
 
-- **Controller**: Raspberry Pi Pico (RP2040)
+## 🛠️ Hardware Components
+
+- **Controller**: Raspberry Pi Pico 2 W (with Wi-Fi and Bluetooth)
 - **Sensors**:
-  - MPU6050 6-axis gyroscope and accelerometer
-  - Wheel encoders (20 pulses per revolution)
+  - MPU6050 6-axis gyroscope and accelerometer (MPU9250 recommended)
+  - 2 Wheel encoders 
 - **Actuators**:
-  - L298N motor driver
+  - L298N motor driver 
   - 2 DC motors with gearboxes
-- **Communication**:
-  - Bluetooth module for remote control
+  - Passive buzzer
 - **Power**:
-  - Battery (7.2V recommended)
-  - Voltage regulator for the Pico
+  - 2 9V Batteries 
 
-## Pinout Configuration
+## 🔌 Pinout Configuration
 
 ![Pinout Configuration](assets/pinout.png)
 
