@@ -79,8 +79,9 @@ class Driving:
         ]  # Smoothing factor for acceleration
         self.target_speed = 0  # Target speed to reach
         self.current_target = 0  # Current interpolated target speed
+        self.delta_encoder = 0   # number of expected endcoder pulses
 
-    def set_balance_angle(self, current_speed: float = 0.0, target_speed: float = 0.0) -> None:
+    def set_balance_angle(self, target_speed: float = 0.0) -> None:
         """
         Set the balance target angle based on current speed and target speed.
 
@@ -118,11 +119,11 @@ class Driving:
         # Add a component of stay still
         self.balance_angle = (
             params.data["PID_CONFIG"]["balance2offset"]
-            * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count)
+            * (self.wheel_encoder_a.pulse_count + self.wheel_encoder_b.pulse_count - 2 * self.delta_encoder)
             / 2
         )
 
-    def balance(self, current_speed: float = 0.0, target_speed: float = 0.0) -> tuple[float, float]:
+    def balance(self, target_speed: float = 0.0) -> tuple[float, float]:
         """
         Balance the robot without moving (stationary balancing).
 
@@ -135,17 +136,23 @@ class Driving:
         # Get current angle using both gyro and accelerometer for better accuracy
         current_angle = self.mpu.get_current_angle()
 
+        # Calculate time difference
+        now = time.time()
+        dt = now - self.last_update_time
+        self.last_update_time = now
+        self.delta_encoder += dt * target_speed
+
         # Calculate the error relative to the balance target
-        self.set_balance_angle(current_speed, target_speed)
+        self.set_balance_angle(target_speed)
         error = self.balance_angle - current_angle
 
         self.angle_data.append(current_angle)
-        self.balance_angle_data.append(self.balance_angle)
         if len(self.angle_data) > 1:
             self.balance_angle = (
                 self.balance_angle
-                - (self.balance_angle - self.balance_angle_data[-2]) * self.k_damping
+                - (self.balance_angle - self.balance_angle_data[-1]) * self.k_damping
             )
+        self.balance_angle_data.append(self.balance_angle)
 
         self.balance_angle = max(
             -self.max_correction_tilt, min(self.max_correction_tilt, self.balance_angle)
@@ -153,11 +160,6 @@ class Driving:
 
         print("Target Angle:", self.balance_angle)
         print("Current Angle:", current_angle)
-
-        # Calculate time difference
-        now = time.time()
-        dt = now - self.last_update_time
-        self.last_update_time = now
 
         # Accumulate the error for the integral term (with anti-windup limits)
         self.error_sum = max(-300, min(300, self.error_sum + error * dt))
@@ -198,12 +200,8 @@ class Driving:
         Returns:
             tuple[float, float, float, float, float]: (current_angle, left_power, right_power, current_speed, current_acceleration)
         """
-        current_speed = (
-            self.wheel_encoder_a.get_speed() + self.wheel_encoder_b.get_speed()
-        ) / 2
-
         # Use the balance method with smoothed target speed
-        current_angle, driving_power = self.balance(current_speed=0, target_speed=0)
+        current_angle, driving_power = self.balance(target_speed=target_speed)
 
         # Set direction for wheel encoder based on current target
         if self.current_target > 0:
@@ -240,11 +238,11 @@ class Driving:
 
             factor = abs(adjusted_turn_bias) / 100.0
             if adjusted_turn_bias > 0:
-                left_power = driving_power
+                left_power = driving_power * (1 + factor)
                 right_power = driving_power * (1 - factor)
             else:
                 left_power = driving_power * (1 - factor)
-                right_power = driving_power
+                right_power = driving_power * (1 + factor)
 
         # Constrain powers to valid range
         left_power = max(-100, min(100, left_power))
