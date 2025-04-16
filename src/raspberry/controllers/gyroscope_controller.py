@@ -112,8 +112,7 @@ class MPU6050:
         Calibrate sensor biases.
 
         IMPORTANT:
-         - Place the robot in a known, level position.
-         - Expected raw readings for level configuration (±2g): X ~0, Y ~0, Z ~+16384.
+         - Place the robot in a known, level position and keep it still during calibration.
 
         The calculated biases are used to ensure that, after correction, the Z axis shows about
         1g (and X & Y near 0) when the robot is level.
