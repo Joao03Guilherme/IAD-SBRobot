@@ -147,6 +147,7 @@ https://github.com/user-attachments/assets/34d4b190-f3cc-48b9-b1b2-641a364e285a
 <div style="display: flex; justify-content: center; gap: 20px;">
   <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350" style="margin:10px;"/>
   <img src="assets/inside_bot.jpeg" alt="Internal components of the robot" width="350" style="margin:10px;"/>
+  <img src="assets/plot.png " alt="Plot of the robot's angle" width="350" style="margin:10px;"/>
 </div>
 
 </div>
