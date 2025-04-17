@@ -1,8 +1,8 @@
 import json
-from typing import Any
+
 
 config_path: str = "parameters/config.json"
-data: dict[str, Any] = {}
+data= {}
 with open(config_path, "r") as f:
     data = json.load(f)
 
