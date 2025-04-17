@@ -5,14 +5,15 @@
 
 ## 🗂️ Table of Contents
 
-- [🚀 Project Overview](#-project-overview)
-- [🛠️ Hardware Components](#-hardware-components)
-- [🔌 Pinout Configuration](#-pinout-configuration)
-- [🧠 PID Control Theory](#-pid-control-theory)
-- [🧩 Software Architecture](#-software-architecture)
-- [⚙️ Setup and Configuration](#-setup-and-configuration)
-- [🎬 Demo](#-demo)
+- [🚀 Project Overview](#project-overview)
+- [🛠️ Hardware Components](#hardware-components)
+- [🔌 Pinout Configuration](#pinout-configuration)
+- [🧠 PID Control Theory](#pid-control-theory)
+- [🧩 Software Architecture](#software-architecture)
+- [⚙️ Setup and Configuration](#setup-and-configuration)
+- [🎬 Demo](#demo)
 
+<a name="project-overview"></a>
 ## 🚀 Project Overview
 
 This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-time control, multiple sensors, and wireless communication into a compact robotics platform. Designed mainly for learning, experimentation, and for fun, it's an ideal entry point into the world of data acquisition, control systems, and embedded programming.
@@ -25,7 +26,7 @@ This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-
 - **Sound & Feedback:** Play melodies (like the Star Wars theme!) and R2D2-style sounds with the onboard buzzer for interactive feedback.
 - **Educational Focus:** Ideal for exploring robotics, control systems, and embedded programming.
 
-
+<a name="hardware-components"></a>
 ## 🛠️ Hardware Components
 
 - **Controller**: Raspberry Pi Pico 2 W (with Wi-Fi and Bluetooth)
@@ -39,6 +40,7 @@ This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-
 - **Power**:
   - 2 9V Batteries 
 
+<a name="pinout-configuration"></a>
 ## 🔌 Pinout Configuration
 
 <img src="assets/pinout.png" alt="Pinout Configuration" width="800"/>
@@ -61,6 +63,7 @@ This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-
 
 </div>
 
+<a name="pid-control-theory"></a>
 ## 🧠 PID Control Theory
 
 A PID (Proportional-Integral-Derivative) controller is a widely used feedback mechanism in control systems. The PID algorithm continuously calculates an error value — the difference between a desired setpoint (in this case upright balance) and a measured process variable (the actual tilt angle). It then applies corrective actions based on three terms:
@@ -77,6 +80,7 @@ To reduce angle drift, wheel encoders are also employed. These encoders act as a
 
 For even greater precision, the system can be upgraded with a 9-DOF (Degrees of Freedom) IMU, which includes an additional magnetometer. This allows the system to detect the Earth’s magnetic field and maintain a consistent heading, offering an external reference that helps correct long-term orientation drift and enhances overall sensor reliability.
 
+<a name="software-architecture"></a>
 ## 🧩 Software Architecture
 
 The codebase is organized into several modules, each with a clear responsibility to ensure modularity, maintainability, and ease of extension:
@@ -106,6 +110,8 @@ The codebase is organized into several modules, each with a clear responsibility
   - [`BLEReceiver.py`](src/raspberry/bluetooth/BLEReceiver.py):
     - Handles Bluetooth Low Energy (BLE) communication.
     - Receives commands and sends telemetry to a remote device.
+  - [`BLEEmitter.py`](src/raspberry/bluetooth/BLEEmitter.py):
+    - Used on the PC side to connect to the robot via BLE and plot a real-time graph of the robot's angle.
 
 - [`parameters/`](src/raspberry/parameters):
   - [`parameters.py`](src/raspberry/parameters/parameters.py):
@@ -116,6 +122,10 @@ The codebase is organized into several modules, each with a clear responsibility
   - [`robot_interface.py`](src/raspberry/training/robot_interface.py):
     - Provides an interface for reinforcement learning experiments.
     - Allows external agents to interact with the robot for training and evaluation.
+
+- [`full_bluethooth_pc.py`](src/raspberry/full_bluethooth_pc.py):
+  - **PC entrypoint script.**
+  - Run this on your computer to connect to the Pico via BLE and interact with the robot, including plotting and telemetry.
 
 **Design Principles:**
 - **Modularity:** Each hardware component and control function is encapsulated in its own module.
@@ -132,6 +142,7 @@ The codebase is organized into several modules, each with a clear responsibility
 
 This architecture enables robust, real-time control while remaining easy to understand and modify for experimentation or educational purposes.
 
+<a name="setup-and-configuration"></a>
 ## ⚙️ Setup and Configuration
 
 1. **Hardware Assembly**:
@@ -146,6 +157,7 @@ This architecture enables robust, real-time control while remaining easy to unde
    - Customize [`parameters/parameters.py`](src/raspberry/parameters/parameters.py) as needed for your specific hardware
    - Initial calibration is required before first use
 
+<a name="demo"></a>
 ## 🎬 Demo
 
 <div align="center">
