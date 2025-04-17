@@ -1,5 +1,7 @@
 ![Project Banner](assets/banner.png)
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![MicroPython](https://img.shields.io/badge/MicroPython-1.25.0-informational.svg?logo=python)](https://micropython.org/)
 
 ## 🗂️ Table of Contents
 
@@ -13,10 +15,10 @@
 
 ## 🚀 Project Overview
 
-This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for learning, experimentation, and fun, it brings together real-time control, multiple sensors and wireless communication in a compact robotics package.
+This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-time control, multiple sensors, and wireless communication into a compact robotics platform. Designed mainly for learning, experimentation, and for fun, it's an ideal entry point into the world of data acquisition, control systems, and embedded programming.
 
 **Key Features:**
-- **Real-Time Balancing:** Uses an MPU6050 IMU and a robust PID controller to keep the robot upright.
+- **Real-Time Balancing:** Uses an MPU6050 IMU, Wheel encoders, and a robust PID controller to keep the robot upright.
 - **Modular Architecture:** Clean separation of motor, sensor, control, and communication logic for easy extension and maintenance.
 - **Bluetooth Remote Control:** Drive, tune, and calibrate your robot wirelessly via a simple command interface.
 - **Live Parameter Tuning:** Adjust PID and balance parameters on the fly for rapid experimentation.
@@ -61,13 +63,19 @@ This self balancing robot is powered by the Raspberry Pi Pico 2W. Designed for l
 
 ## 🧠 PID Control Theory
 
-A PID (Proportional-Integral-Derivative) controller is a feedback mechanism widely used in control systems. It continuously calculates an error value as the difference between a desired setpoint and a measured process variable, applying corrections based on proportional, integral, and derivative terms:
+A PID (Proportional-Integral-Derivative) controller is a widely used feedback mechanism in control systems. The PID algorithm continuously calculates an error value — the difference between a desired setpoint (in this case upright balance) and a measured process variable (the actual tilt angle). It then applies corrective actions based on three terms:
 
-- **Proportional (P):** Reacts to the current error. Higher values increase responsiveness but can cause overshoot.
-- **Integral (I):** Reacts to the accumulation of past errors. Helps eliminate steady-state error but can introduce instability if too high.
-- **Derivative (D):** Reacts to the rate of change of the error. Helps dampen oscillations and improve stability.
+- **Proportional (P)**: Reacts to the current error. A higher gain increases responsiveness but can lead to overshoot.
 
-In this robot, the PID controller processes the tilt angle from the IMU sensor to keep the robot balanced by adjusting the motor outputs in real time. Proper tuning of the PID gains is essential for stable and responsive balancing.
+- **Integral (I)**: Accounts for the accumulation of past errors, helping to eliminate long-term bias, though too much can cause instability.
+
+- **Derivative (D)**: Predicts future error by observing the rate of change, damping oscillations and improving stability.
+
+In this robot, the PID controller processes real-time tilt data from an IMU (Inertial Measurement Unit) sensor, adjusting the motor power accordingly to keep the robot balanced. Proper tuning of the PID parameters is crucial to achieving a smooth and responsive behavior, and this can be done efficiently using reinforcement learning.
+
+To reduce angle drift, wheel encoders are also employed. These encoders act as a reference point for the IMU, helping compensate for the natural drift that can occur with inertial sensors over time. This approach of combining inertial and wheel data improves the accuracy of position and movement estimation.
+
+For even greater precision, the system can be upgraded with a 9-DOF (Degrees of Freedom) IMU, which includes an additional magnetometer. This allows the system to detect the Earth’s magnetic field and maintain a consistent heading, offering an external reference that helps correct long-term orientation drift and enhances overall sensor reliability.
 
 ## 🧩 Software Architecture
 
@@ -94,8 +102,8 @@ The codebase is organized into several modules, each with a clear responsibility
     - Controls the passive buzzer for sound feedback.
     - Supports playing melodies and sound effects asynchronously.
 
-- [`bluetooth/`](src/raspberry/bluethooth):
-  - [`BLEReceiver.py`](src/raspberry/bluethooth/BLEReceiver.py):
+- [`bluetooth/`](src/raspberry/bluetooth):
+  - [`BLEReceiver.py`](src/raspberry/bluetooth/BLEReceiver.py):
     - Handles Bluetooth Low Energy (BLE) communication.
     - Receives commands and sends telemetry to a remote device.
 
