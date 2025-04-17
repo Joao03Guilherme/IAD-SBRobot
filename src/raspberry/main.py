@@ -12,7 +12,7 @@ from controllers.motor_controller import MotorController
 from controllers.buzzer_controller import (
     BuzzerController,
 )  # Import the new buzzer controller
-from bluethooth.BLEReceiver import BLEReceiver
+from bluetooth.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
 from parameters.parameters import (
     data,

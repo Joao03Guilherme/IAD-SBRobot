@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MicroPython](https://img.shields.io/badge/MicroPython-1.25.0-informational.svg?logo=python)](https://micropython.org/)
+[![Firmware Download](https://img.shields.io/badge/Firmware-v1.25.0.uf2-brightgreen.svg?logo=raspberry-pi&logoColor=white)](https://micropython.org/download/RPI_PICO2_W/)
 
 ## 🗂️ Table of Contents
 
@@ -35,7 +36,7 @@ This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-
   - 2 Wheel encoders 
 - **Actuators**:
   - L298N motor driver 
-  - 2 DC motors with gearboxes
+  - 2 DC motors
   - Passive buzzer
 - **Power**:
   - 2 9V Batteries 
@@ -127,20 +128,12 @@ The codebase is organized into several modules, each with a clear responsibility
   - **PC entrypoint script.**
   - Run this on your computer to connect to the Pico via BLE and interact with the robot, including plotting and telemetry.
 
-**Design Principles:**
-- **Modularity:** Each hardware component and control function is encapsulated in its own module.
-- **Asynchronous Operation:** Uses `asyncio` for concurrent tasks (e.g., BLE communication, telemetry, and control loops).
-- **Extensibility:** New sensors, actuators, or control strategies can be added with minimal changes to the main logic.
-- **Separation of Concerns:** Hardware abstraction, control logic, and communication are clearly separated for clarity and testability.
-
 **Typical Data Flow:**
 1. Sensor data (IMU, encoders) is read by controller modules.
 2. The balance controller computes motor commands using PID logic.
 3. Motor controller actuates the motors accordingly.
 4. BLEReceiver handles incoming commands and outgoing telemetry.
 5. Buzzer controller provides sound feedback for events and status.
-
-This architecture enables robust, real-time control while remaining easy to understand and modify for experimentation or educational purposes.
 
 <a name="setup-and-configuration"></a>
 ## ⚙️ Setup and Configuration
@@ -154,7 +147,8 @@ This architecture enables robust, real-time control while remaining easy to unde
    - Upload all project files to the Pico
 
 3. **Initial Configuration**:
-   - Customize [`parameters/parameters.py`](src/raspberry/parameters/parameters.py) as needed for your specific hardware
+   - Run [`full_bluethooth_pc.py`](src/raspberry/full_bluethooth_pc.py) to connect via bluetooth to the robot
+   - Customize [`parameters/parameters.py`](src/raspberry/parameters/parameters.py) or via bluetooth as needed for your specific case
    - Initial calibration is required before first use
 
 <a name="demo"></a>
