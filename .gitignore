@@ -18,3 +18,7 @@ venv.bak/
 # Vscode settings
 .vscode/
 
+# Ds store
+.DS_Store
+
+
