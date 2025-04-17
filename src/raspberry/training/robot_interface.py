@@ -11,7 +11,7 @@ from collections import deque
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Import existing robot communication modules
-from raspberry.bluethooth.BLEReceiver import BLEReceiver
+from raspberry.bluetooth.BLEReceiver import BLEReceiver
 from raspberry.main import SelfBalancingRobot
 
 

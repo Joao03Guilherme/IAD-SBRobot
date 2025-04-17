@@ -16,9 +16,9 @@ pico_sdk_init()
 set(PYTHON_FILES
     controllers/gyroscope_controller.py
     controllers/motor_controller.py
-    bluethooth/BLEEmiter.py 
-    bluethooth/BLEReceiver.py
-    bluethooth/BLEParameters.py
+    bluetooth/BLEEmiter.py 
+    bluetooth/BLEReceiver.py
+    bluetooth/BLEParameters.py
     accelerometer.py
     directions_finder.py
     drive.py

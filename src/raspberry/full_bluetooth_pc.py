@@ -1,5 +1,5 @@
 import asyncio
-from bluethooth.BLEEmitter import BLEEmitter
+from bluetooth.BLEEmitter import BLEEmitter
 import parameters.parameters as params
 import threading
 import queue
