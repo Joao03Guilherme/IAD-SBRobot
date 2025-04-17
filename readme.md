@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MicroPython](https://img.shields.io/badge/MicroPython-1.25.0-informational.svg?logo=python)](https://micropython.org/)
+[![Firmware Download](https://img.shields.io/badge/Firmware-v1.25.0.uf2-brightgreen.svg?logo=raspberry-pi&logoColor=white)](https://micropython.org/download/RPI_PICO2_W/)
 
 ## 🗂️ Table of Contents
 
