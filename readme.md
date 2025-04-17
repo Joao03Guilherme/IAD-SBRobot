@@ -107,11 +107,11 @@ The codebase is organized into several modules, each with a clear responsibility
     - Controls the passive buzzer for sound feedback.
     - Supports playing melodies and sound effects asynchronously.
 
-- [`bluetooth/`](src/raspberry/bluetooth):
-  - [`BLEReceiver.py`](src/raspberry/bluetooth/BLEReceiver.py):
+- [`bluetooth/`](src/raspberry/bluetooth_controllers):
+  - [`BLEReceiver.py`](src/raspberry/bluetooth_controllers/BLEReceiver.py):
     - Handles Bluetooth Low Energy (BLE) communication.
     - Receives commands and sends telemetry to a remote device.
-  - [`BLEEmitter.py`](src/raspberry/bluetooth/BLEEmitter.py):
+  - [`BLEEmitter.py`](src/raspberry/bluetooth_controllers/BLEEmitter.py):
     - Used on the PC side to connect to the robot via BLE and plot a real-time graph of the robot's angle.
 
 - [`parameters/`](src/raspberry/parameters):
