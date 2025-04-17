@@ -247,120 +247,140 @@ class BLEEmitter:
 
     def _run_plot_thread(self) -> None:
         """
-        Run the matplotlib plot in a separate thread, updating with new angle and balance data.
-
+        Run the matplotlib plot in a separate thread, with two separate plots:
+        1. Angle and distance plot
+        2. PID terms plot
+        
         Returns:
             None
         """
         plt.ion()  # Enable interactive mode
-        self.fig, self.ax = plt.subplots(figsize=(8, 5))
         
-        # Create separate axes for distance (which may have a different scale)
-        self.ax2 = self.ax.twinx()
-
-        # Create line objects
-        (self.line,) = self.ax.plot([], [], lw=2, color="blue", label="Current Angle")
-        (self.balance_line,) = self.ax.plot(
+        # Create two separate figure windows
+        self.fig1, self.ax1 = plt.subplots(figsize=(8, 5))
+        self.ax1_twin = self.ax1.twinx()  # For distance data
+        
+        self.fig2, self.ax2 = plt.subplots(figsize=(8, 5))
+        
+        # First figure - Angle and Distance
+        (self.line,) = self.ax1.plot([], [], lw=2, color="blue", label="Current Angle")
+        (self.balance_line,) = self.ax1.plot(
             [], [], lw=2, color="red", label="Target Angle (x10)"
         )
-        (self.distance_line,) = self.ax2.plot(
+        (self.distance_line,) = self.ax1_twin.plot(
             [], [], lw=2, color="green", label="Distance"
         )
-        (self.p_term_line,) = self.ax.plot([], [], lw=2, color="purple", label="P Term")
-        (self.d_term_line,) = self.ax.plot([], [], lw=2, color="orange", label="D Term")
-        (self.i_term_line,) = self.ax.plot([], [], lw=2, color="brown", label="I Term")
-        (self.pid_sum_line,) = self.ax.plot([], [], lw=2, color="cyan", label="PID Sum", linestyle='--')
-
-        self.ax.set_ylim(-50, 50)
-        self.ax2.set_ylim(-200, 200)  # Set appropriate range for distance
-        self.ax.set_xlim(0, 100)
-        self.ax.grid(True)
-        self.ax.set_title("Real-time Sensor Data")
-        self.ax.set_xlabel("Time (ticks)")
-        self.ax.set_ylabel("Angle (°)")
-        self.ax2.set_ylabel("Distance (cm)")
         
-        # Create a combined legend for both axes
-        lines1, labels1 = self.ax.get_legend_handles_labels()
-        lines2, labels2 = self.ax2.get_legend_handles_labels()
-        self.ax.legend(lines1 + lines2, labels1 + labels2, loc="upper right")
+        # Second figure - PID terms
+        (self.p_term_line,) = self.ax2.plot([], [], lw=2, color="purple", label="P Term")
+        (self.d_term_line,) = self.ax2.plot([], [], lw=2, color="orange", label="D Term")
+        (self.i_term_line,) = self.ax2.plot([], [], lw=2, color="brown", label="I Term")
+        (self.pid_sum_line,) = self.ax2.plot([], [], lw=2, color="cyan", label="PID Sum", linestyle='--')
         
-        self.fig.tight_layout()
+        # Configure first plot
+        self.ax1.set_ylim(-50, 50)
+        self.ax1_twin.set_ylim(-200, 200)  # Set appropriate range for distance
+        self.ax1.set_xlim(0, 100)
+        self.ax1.grid(True)
+        self.ax1.set_title("Angle and Distance Data")
+        self.ax1.set_xlabel("Time (ticks)")
+        self.ax1.set_ylabel("Angle (°)")
+        self.ax1_twin.set_ylabel("Distance (cm)")
+        
+        # Create a combined legend for first plot
+        lines1, labels1 = self.ax1.get_legend_handles_labels()
+        lines2, labels2 = self.ax1_twin.get_legend_handles_labels()
+        self.ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right")
+        
+        # Configure second plot
+        self.ax2.set_ylim(-50, 50)
+        self.ax2.set_xlim(0, 100)
+        self.ax2.grid(True)
+        self.ax2.set_title("PID Control Terms")
+        self.ax2.set_xlabel("Time (ticks)")
+        self.ax2.set_ylabel("Value")
+        self.ax2.legend(loc="upper right")
+        
+        self.fig1.tight_layout()
+        self.fig2.tight_layout()
+        
         plt.show(block=False)
-
-        # Update plot in a loop
+        
+        # Update plots in a loop
         while self.plot_running:
             try:
-                # Update angle data
+                # Update FIRST PLOT - angle and distance
                 if self.angle_buffer:
                     y_data = [x for x in self.angle_buffer]
                     x_data = list(range(len(y_data)))
                     self.line.set_data(x_data, y_data)
-
-                # Update balance angle data
+                    
                 if self.balance_angle_buffer:
                     y_data = [x for x in self.balance_angle_buffer]
                     x_data = list(range(len(y_data)))
                     self.balance_line.set_data(x_data, y_data)
                     
-                # Update distance data
                 if self.distance_buffer:
                     y_data = [x for x in self.distance_buffer]
                     x_data = list(range(len(y_data)))
                     self.distance_line.set_data(x_data, y_data)
-
-                # Update P term data
+                    
+                # Update SECOND PLOT - PID terms
                 if self.p_term_buffer:
                     y_data = [x for x in self.p_term_buffer]
                     x_data = list(range(len(y_data)))
                     self.p_term_line.set_data(x_data, y_data)
-                
-                # Update D term data
+                    
                 if self.d_term_buffer:
                     y_data = [x for x in self.d_term_buffer]
                     x_data = list(range(len(y_data)))
                     self.d_term_line.set_data(x_data, y_data)
-                
-                # Update I term data
+                    
                 if self.i_term_buffer:
                     y_data = [x for x in self.i_term_buffer]
                     x_data = list(range(len(y_data)))
                     self.i_term_line.set_data(x_data, y_data)
-
-                # Add this after the I term update code
+                    
                 # Update PID sum data
                 if self.p_term_buffer and self.i_term_buffer and self.d_term_buffer:
-                    # Calculate the minimum length of all three buffers
                     min_len = min(len(self.p_term_buffer), len(self.i_term_buffer), len(self.d_term_buffer))
-                    
-                    # Calculate sum of PID terms
                     y_data = [self.p_term_buffer[i] + self.i_term_buffer[i] + self.d_term_buffer[i] 
                               for i in range(min_len)]
-                    
                     x_data = list(range(len(y_data)))
                     self.pid_sum_line.set_data(x_data, y_data)
-
-                # Dynamically adjust the x-axis if needed
-                max_len = max(
+                    
+                # Dynamically adjust x-axis for first plot
+                max_len1 = max(
                     len(self.angle_buffer), 
                     len(self.balance_angle_buffer),
                     len(self.distance_buffer),
+                    100
+                )
+                if max_len1 > self.ax1.get_xlim()[1]:
+                    self.ax1.set_xlim(0, max_len1)
+                    
+                # Dynamically adjust x-axis for second plot
+                max_len2 = max(
                     len(self.p_term_buffer),
                     len(self.d_term_buffer),
                     len(self.i_term_buffer),
-                    # No need to add the PID sum here since it's limited by min_len of its components
                     100
                 )
-                if max_len > self.ax.get_xlim()[1]:
-                    self.ax.set_xlim(0, max_len)
-
-                # Redraw the plot
-                self.fig.canvas.draw()
-                self.fig.canvas.flush_events()
-
+                if max_len2 > self.ax2.get_xlim()[1]:
+                    self.ax2.set_xlim(0, max_len2)
+                    
+                # Redraw both plots
+                self.fig1.canvas.draw()
+                self.fig1.canvas.flush_events()
+                self.fig2.canvas.draw()
+                self.fig2.canvas.flush_events()
+                
             except Exception as e:
                 print(f"Plot error: {e}")
-
+                
             # Sleep for a short duration to control update rate
             time.sleep(0.1)
-        plt.close(self.fig)
+            
+        # Close both plots when done
+        plt.close(self.fig1)
+        plt.close(self.fig2)
