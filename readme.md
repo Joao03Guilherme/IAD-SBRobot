@@ -36,7 +36,7 @@ This self-balancing robot is powered by the Raspberry Pi Pico W, combining real-
   - 2 Wheel encoders 
 - **Actuators**:
   - L298N motor driver 
-  - 2 DC motors with gearboxes
+  - 2 DC motors
   - Passive buzzer
 - **Power**:
   - 2 9V Batteries 
