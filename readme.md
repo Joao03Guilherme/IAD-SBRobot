@@ -156,24 +156,17 @@ The codebase is organized into several modules, each with a clear responsibility
 
 <div align="center">
 
-https://github.com/user-attachments/assets/decdff71-1c61-4fef-afbe-19137b25a101
+[Vídeo de demonstração](https://github.com/user-attachments/assets/decdff71-1c61-4fef-afbe-19137b25a101)
 
-<div style="display: flex; justify-content: center; gap: 20px;">
-  <figure>
-    <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350" style="margin:10px;"/>
-    <figcaption>Vista geral do robô montado</figcaption>
-  </figure>
-  <figure>
-    <img src="assets/inside_bot.jpeg" alt="Internal components of the robot" width="350" style="margin:10px;"/>
-    <figcaption>Componentes internos e eletrónica</figcaption>
-  </figure>
-  <figure>
-    <img src="assets/plot.png" alt="Plot of the robot's angle" width="350" style="margin:10px;"/>
-    <figcaption>Gráfico do ângulo do robô em tempo real</figcaption>
-  </figure>
-</div>
+<br>
+
+<img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350"/>
+<p align="center"><em>Vista geral do robô montado</em></p>
+
+<img src="assets/inside_bot.jpeg" alt="Internal components of the robot" width="350"/>
+<p align="center"><em>Componentes internos e eletrónica</em></p>
+
+<img src="assets/plot.png" alt="Plot of the robot's angle" width="350"/>
+<p align="center"><em>Gráfico do ângulo do robô em tempo real</em></p>
 
 </div>
-
-
-
