@@ -81,6 +81,10 @@ class Driving:
         self.current_target = 0  # Current interpolated target speed
         self.delta_encoder = 0   # number of expected endcoder pulses
 
+        self.p_term = 0
+        self.i_term = 0
+        self.d_term = 0
+
     def set_balance_angle(self, target_speed: float = 0.0) -> None:
         """
         Set the balance target angle based on current speed and target speed.
@@ -168,6 +172,10 @@ class Driving:
         p_term = self.balance_kp * error
         i_term = self.balance_ki * self.error_sum
         d_term = self.balance_kd * ((error - self.last_error) / dt) if dt > 0 else 0
+
+        self.p_term = p_term
+        self.i_term = i_term
+        self.d_term = d_term
 
         # Sum the PID terms to get the control output (balance power)
         balance_power = p_term + i_term + d_term

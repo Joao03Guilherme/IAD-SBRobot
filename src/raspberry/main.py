@@ -12,7 +12,7 @@ from controllers.motor_controller import MotorController
 from controllers.buzzer_controller import (
     BuzzerController,
 )  # Import the new buzzer controller
-from bluetooth.BLEReceiver import BLEReceiver
+from bluetooth_controllers.BLEReceiver import BLEReceiver
 from controllers.balance_controller import Driving
 from parameters.parameters import (
     data,
@@ -196,9 +196,12 @@ class SelfBalancingRobot:
         balance_angle = 0
         if len(self.driver.balance_angle_data) > 0:
             balance_angle = self.driver.balance_angle
+        
+        # Get the distance traveled 
+        distance = (self.driver.wheel_encoder_a.pulse_count + self.driver.wheel_encoder_b.pulse_count)/2
 
         # Create telemetry string (simpler than JSON)
-        telemetry = f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0}"
+        telemetry = f"A:{angle:.2f},B:{balance_angle:.2f},S:{self.speed},T:{self.turn},R:{1 if self.running else 0},D:{distance:.2f},P:{self.driver.p_term:.2f},Y:{self.driver.d_term:.2f},I:{self.driver.i_term:.2f}"
         if self.driver.left_power_data and self.driver.right_power_data:
             telemetry += f",L:{self.driver.left_power_data[-1]},R:{self.driver.right_power_data[-1]}"
 
