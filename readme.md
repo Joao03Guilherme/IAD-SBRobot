@@ -156,17 +156,18 @@ The codebase is organized into several modules, each with a clear responsibility
 
 <div align="center">
 
-[Vídeo de demonstração](https://github.com/user-attachments/assets/decdff71-1c61-4fef-afbe-19137b25a101)
+[Demo video](https://github.com/user-attachments/assets/decdff71-1c61-4fef-afbe-19137b25a101)
 
 <br>
 
 <img src="assets/full_bot.jpeg" alt="Full view of the robot" width="350"/>
-<p align="center"><em>Vista geral do robô montado</em></p>
+<p align="center"><em>General view of the assembled robot</em></p>
 
 <img src="assets/inside_bot.jpeg" alt="Internal components of the robot" width="350"/>
-<p align="center"><em>Componentes internos e eletrónica</em></p>
+<p align="center"><em>Internal components and electronics</em></p>
 
 <img src="assets/plot.png" alt="Plot of the robot's angle" width="350"/>
-<p align="center"><em>Gráfico do ângulo do robô em tempo real</em></p>
+<p align="center"><em>Real-time plot of the robot's angle</em></p>
 
+</div>
 </div>
